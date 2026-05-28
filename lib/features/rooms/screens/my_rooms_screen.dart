@@ -13,14 +13,17 @@ class MyRoomsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     // Trong thực tế sẽ dùng một provider riêng cho host rooms
-    // final rooms = ref.watch(hostRoomsProvider); 
+    // final rooms = ref.watch(hostRoomsProvider);
     final roomState = ref.watch(roomNotifierProvider);
     final rooms = roomState.rooms; // Tạm thời dùng chung danh sách để demo
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
       appBar: AppBar(
-        title: const Text('Phòng của tôi', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const Text(
+          'Phòng của tôi',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
         backgroundColor: Colors.white,
         foregroundColor: AppTheme.textPrimary,
         elevation: 0,
@@ -52,26 +55,38 @@ class MyRoomsScreen extends ConsumerWidget {
         children: [
           Icon(Icons.home_work_outlined, size: 80, color: Colors.grey[300]),
           const SizedBox(height: 16),
-          const Text('Bạn chưa có phòng nào', style: TextStyle(fontSize: 18, color: Colors.grey)),
+          const Text(
+            'Bạn chưa có phòng nào',
+            style: TextStyle(fontSize: 18, color: Colors.grey),
+          ),
           const SizedBox(height: 24),
           ElevatedButton(
             onPressed: () => context.push('/create-room'),
             style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primary),
-            child: const Text('Tạo phòng ngay', style: TextStyle(color: Colors.white)),
+            child: const Text(
+              'Tạo phòng ngay',
+              style: TextStyle(color: Colors.white),
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildDismissibleCard(BuildContext context, WidgetRef ref, RoomModel room) {
+  Widget _buildDismissibleCard(
+    BuildContext context,
+    WidgetRef ref,
+    RoomModel room,
+  ) {
     return Dismissible(
       key: Key(room.id),
       direction: DismissDirection.endToStart,
       confirmDismiss: (direction) => _showDeleteConfirm(context),
       onDismissed: (direction) {
         // ref.read(roomNotifierProvider.notifier).deleteRoom(room.id);
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Đã xóa phòng')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Đã xóa phòng')));
       },
       background: Container(
         alignment: Alignment.centerRight,
@@ -92,12 +107,20 @@ class MyRoomsScreen extends ConsumerWidget {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Xóa phòng?'),
-        content: const Text('Bạn có chắc chắn muốn xóa phòng này không? Hành động này không thể hoàn tác.'),
+        content: const Text(
+          'Bạn có chắc chắn muốn xóa phòng này không? Hành động này không thể hoàn tác.',
+        ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Hủy', style: TextStyle(color: Colors.grey))),
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Hủy', style: TextStyle(color: Colors.grey)),
+          ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Xóa', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+            child: const Text(
+              'Xóa',
+              style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+            ),
           ),
         ],
       ),
@@ -114,7 +137,7 @@ class _MyRoomCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final currencyFormat = NumberFormat.currency(locale: 'vi_VN', symbol: 'đ');
     // Giả lập trạng thái vì RoomModel chưa có status
-    const String status = 'ACTIVE'; 
+    const String status = 'ACTIVE';
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -122,7 +145,12 @@ class _MyRoomCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10)],
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 10,
+          ),
+        ],
       ),
       child: Column(
         children: [
@@ -131,20 +159,35 @@ class _MyRoomCard extends StatelessWidget {
             children: [
               ClipRRect(
                 borderRadius: BorderRadius.circular(12),
-                child: CachedNetworkImage(
-                  imageUrl: room.imageUrl,
-                  width: 100,
-                  height: 100,
-                  fit: BoxFit.cover,
-                  placeholder: (context, url) => Container(
-                    color: Colors.grey[100],
-                    child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
-                  ),
-                  errorWidget: (context, url, error) => Container(
-                    color: Colors.grey[100],
-                    child: const Icon(Icons.broken_image, color: Colors.grey),
-                  ),
-                ),
+                child: room.imageUrl.isNotEmpty
+                    ? CachedNetworkImage(
+                        imageUrl: room.imageUrl,
+                        width: 100,
+                        height: 100,
+                        fit: BoxFit.cover,
+                        placeholder: (context, url) => Container(
+                          color: Colors.grey[100],
+                          child: const Center(
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          ),
+                        ),
+                        errorWidget: (context, url, error) => Container(
+                          color: Colors.grey[100],
+                          child: const Icon(
+                            Icons.broken_image,
+                            color: Colors.grey,
+                          ),
+                        ),
+                      )
+                    : Container(
+                        width: 100,
+                        height: 100,
+                        color: Colors.grey[100],
+                        child: const Icon(
+                          Icons.broken_image,
+                          color: Colors.grey,
+                        ),
+                      ),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -159,26 +202,38 @@ class _MyRoomCard extends StatelessWidget {
                         const SizedBox(width: 4),
                         Text(
                           '${room.rating}',
-                          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                         const SizedBox(width: 2),
                         Text(
                           '(${room.reviews})',
-                          style: const TextStyle(fontSize: 11, color: Colors.grey),
+                          style: const TextStyle(
+                            fontSize: 11,
+                            color: Colors.grey,
+                          ),
                         ),
                       ],
                     ),
                     const SizedBox(height: 8),
                     Text(
                       room.name,
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 4),
                     Text(
                       '${currencyFormat.format(room.price)} / đêm',
-                      style: const TextStyle(color: AppTheme.primary, fontWeight: FontWeight.w600),
+                      style: const TextStyle(
+                        color: AppTheme.primary,
+                        fontWeight: FontWeight.w600,
+                      ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -191,16 +246,27 @@ class _MyRoomCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              _ActionButton(icon: Icons.edit_outlined, label: 'Sửa', onTap: () => context.push('/edit-room/${room.id}')),
-              _ActionButton(icon: Icons.calendar_today_outlined, label: 'Lịch', onTap: () => context.push('/room-calendar/${room.id}', extra: room.name)),
               _ActionButton(
-                icon: status == 'ACTIVE' ? Icons.pause_circle_outline : Icons.play_circle_outline,
+                icon: Icons.edit_outlined,
+                label: 'Sửa',
+                onTap: () => context.push('/edit-room/${room.id}'),
+              ),
+              _ActionButton(
+                icon: Icons.calendar_today_outlined,
+                label: 'Lịch',
+                onTap: () =>
+                    context.push('/room-calendar/${room.id}', extra: room.name),
+              ),
+              _ActionButton(
+                icon: status == 'ACTIVE'
+                    ? Icons.pause_circle_outline
+                    : Icons.play_circle_outline,
                 label: status == 'ACTIVE' ? 'Tạm dừng' : 'Bật lại',
                 color: status == 'ACTIVE' ? Colors.orange : Colors.green,
                 onTap: () {},
               ),
             ],
-          )
+          ),
         ],
       ),
     );
@@ -225,8 +291,18 @@ class _MyRoomCard extends StatelessWidget {
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(6)),
-      child: Text(text, style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.bold)),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Text(
+        text,
+        style: TextStyle(
+          color: color,
+          fontSize: 10,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
     );
   }
 }
@@ -237,7 +313,12 @@ class _ActionButton extends StatelessWidget {
   final VoidCallback onTap;
   final Color? color;
 
-  const _ActionButton({required this.icon, required this.label, required this.onTap, this.color});
+  const _ActionButton({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+    this.color,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -247,7 +328,13 @@ class _ActionButton extends StatelessWidget {
         children: [
           Icon(icon, size: 20, color: color ?? AppTheme.textSecondary),
           const SizedBox(height: 4),
-          Text(label, style: TextStyle(fontSize: 11, color: color ?? AppTheme.textSecondary)),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 11,
+              color: color ?? AppTheme.textSecondary,
+            ),
+          ),
         ],
       ),
     );

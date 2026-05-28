@@ -16,7 +16,14 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
   late double _maxPrice;
   late List<String> _selectedAmenities;
 
-  final List<String> _amenitiesOptions = ['Wifi', 'Bếp', 'Bể bơi', 'Điều hòa', 'Tivi', 'Máy giặt'];
+  final List<String> _amenitiesOptions = [
+    'Wifi',
+    'Bếp',
+    'Bể bơi',
+    'Điều hòa',
+    'Tivi',
+    'Máy giặt',
+  ];
 
   @override
   void initState() {
@@ -29,7 +36,11 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final currencyFormat = NumberFormat.currency(locale: 'vi_VN', symbol: 'đ', decimalDigits: 0);
+    final currencyFormat = NumberFormat.currency(
+      locale: 'vi_VN',
+      symbol: 'đ',
+      decimalDigits: 0,
+    );
 
     return Container(
       padding: const EdgeInsets.all(24),
@@ -51,13 +62,16 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
               IconButton(
                 icon: const Icon(Icons.close),
                 onPressed: () => Navigator.pop(context),
-              )
+              ),
             ],
           ),
           const SizedBox(height: 24),
 
           // Price Range
-          const Text('Khoảng giá', style: TextStyle(fontWeight: FontWeight.bold)),
+          const Text(
+            'Khoảng giá',
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
           const SizedBox(height: 12),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -87,7 +101,10 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
           const SizedBox(height: 24),
 
           // Amenities
-          const Text('Tiện nghi', style: TextStyle(fontWeight: FontWeight.bold)),
+          const Text(
+            'Tiện nghi',
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
           const SizedBox(height: 12),
           Wrap(
             spacing: 8,
@@ -105,7 +122,7 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
                     }
                   });
                 },
-                selectedColor: AppTheme.primary.withOpacity(0.2),
+                selectedColor: AppTheme.primary.withValues(alpha: 0.2),
                 checkmarkColor: AppTheme.primary,
               );
             }).toList(),
@@ -119,18 +136,30 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
             height: 52,
             child: ElevatedButton(
               onPressed: () {
-                ref.read(roomFilterProvider.notifier).update((state) => state.copyWith(
-                  minPrice: _minPrice,
-                  maxPrice: _maxPrice,
-                  selectedAmenities: _selectedAmenities,
-                ));
+                ref
+                    .read(roomFilterProvider.notifier)
+                    .update(
+                      (state) => state.copyWith(
+                        minPrice: _minPrice,
+                        maxPrice: _maxPrice,
+                        selectedAmenities: _selectedAmenities,
+                      ),
+                    );
                 Navigator.pop(context);
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppTheme.primary,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
-              child: const Text('Áp dụng', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+              child: const Text(
+                'Áp dụng',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ),
           ),
           const SizedBox(height: 16),

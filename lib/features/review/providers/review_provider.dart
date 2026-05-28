@@ -1,5 +1,6 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../rooms/providers/room_provider.dart';
+﻿import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/network/dio_client.dart';
+import '../../../core/utils/response_utils.dart';
 import '../models/review_model.dart';
 
 class ReviewState {
@@ -38,36 +39,32 @@ class ReviewNotifier extends StateNotifier<ReviewState> {
   Future<void> fetchRoomReviews(String roomId) async {
     state = state.copyWith(isLoading: true);
     try {
-      // Giả lập API
-      await Future.delayed(const Duration(seconds: 1));
-      
-      final mockReviews = [
-        ReviewModel(
-          id: 'r1',
-          bookingId: 'b1',
-          roomId: roomId,
-          userName: 'Nguyễn Thu Trang',
-          userAvatar: 'https://i.pravatar.cc/150?u=r1',
-          overallRating: 5,
-          quickTags: ['Sạch sẽ', 'View đẹp'],
-          comment: 'Phòng rất đẹp, chủ nhà nhiệt tình chu đáo. Sẽ quay lại lần sau!',
-          images: ['https://picsum.photos/seed/rv1/400/300', 'https://picsum.photos/seed/rv2/400/300'],
-          createdAt: DateTime.now().subtract(const Duration(days: 5)),
-        ),
-        ReviewModel(
-          id: 'r2',
-          bookingId: 'b2',
-          roomId: roomId,
-          userName: 'Trần Văn Bình',
-          userAvatar: 'https://i.pravatar.cc/150?u=r2',
-          overallRating: 4,
-          quickTags: ['Vị trí tốt'],
-          comment: 'Vị trí rất gần trung tâm, đi lại thuận tiện. Tuy nhiên phòng hơi nhỏ một chút so với ảnh.',
-          createdAt: DateTime.now().subtract(const Duration(days: 12)),
-        ),
-      ];
+      final dio = ref.read(dioProvider);
+      final response = await dio.get('/api/rooms/$roomId/reviews');
+      if (response.data['success'] == true) {
+        final items = extractItems(response.data['data']);
+        final reviews = items.map((json) => ReviewModel.fromJson(json)).toList();
+        state = state.copyWith(isLoading: false, reviews: reviews);
+      } else {
+        state = state.copyWith(isLoading: false);
+      }
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
+    }
+  }
 
-      state = state.copyWith(isLoading: false, reviews: mockReviews);
+  Future<void> fetchMyReviews() async {
+    state = state.copyWith(isLoading: true);
+    try {
+      final dio = ref.read(dioProvider);
+      final response = await dio.get('/api/reviews/my-reviews');
+      if (response.data['success'] == true) {
+        final items = extractItems(response.data['data']);
+        final reviews = items.map((json) => ReviewModel.fromJson(json)).toList();
+        state = state.copyWith(isLoading: false, reviews: reviews);
+      } else {
+        state = state.copyWith(isLoading: false);
+      }
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
     }
@@ -76,7 +73,7 @@ class ReviewNotifier extends StateNotifier<ReviewState> {
   Future<bool> submitReview({
     required String bookingId,
     required String roomId,
-    required double overallRating,
+    required double rating,
     required double cleanliness,
     required double location,
     required double service,
@@ -88,14 +85,103 @@ class ReviewNotifier extends StateNotifier<ReviewState> {
     state = state.copyWith(isSubmitting: true);
     try {
       final dio = ref.read(dioProvider);
-      
-      // await dio.post('/api/reviews', data: { ... });
-      
-      // Giả lập thành công
-      await Future.delayed(const Duration(seconds: 2));
-      
+
+      final int ratingInt = rating.round().clamp(1, 5);
+      final int cleanlinessInt = cleanliness.round().clamp(1, 5);
+      final int locationInt = location.round().clamp(1, 5);
+      final int serviceInt = service.round().clamp(1, 5);
+      final int valueInt = value.round().clamp(1, 5);
+
+      final Map<String, dynamic> body = {
+        'bookingId': int.tryParse(bookingId) ?? 0,
+        'rating': ratingInt,
+        'cleanliness': cleanlinessInt,
+        'location': locationInt,
+        'service': serviceInt,
+        'value': valueInt,
+        if (tags.isNotEmpty) 'tags': tags,
+        if (comment != null && comment.trim().isNotEmpty) 'comment': comment.trim(),
+      };
+
+      final response = await dio.post('/api/reviews', data: body);
+
+      final data = response.data;
+      final isSuccess = (data is Map && data['success'] == true) ||
+          (response.statusCode != null &&
+              response.statusCode! >= 200 &&
+              response.statusCode! < 300);
+
       state = state.copyWith(isSubmitting: false);
-      return true;
+      return isSuccess;
+    } catch (e) {
+      state = state.copyWith(isSubmitting: false, error: e.toString());
+      return false;
+    }
+  }
+
+  Future<bool> updateReview({
+    required String reviewId,
+    required double rating,
+    required double cleanliness,
+    required double location,
+    required double service,
+    required double value,
+    required List<String> tags,
+    String? comment,
+  }) async {
+    state = state.copyWith(isSubmitting: true);
+    try {
+      final dio = ref.read(dioProvider);
+
+      final Map<String, dynamic> body = {
+        'rating': rating.round().clamp(1, 5),
+        'cleanliness': cleanliness.round().clamp(1, 5),
+        'location': location.round().clamp(1, 5),
+        'service': service.round().clamp(1, 5),
+        'value': value.round().clamp(1, 5),
+        'tags': tags,
+        if (comment != null && comment.trim().isNotEmpty) 'comment': comment.trim(),
+      };
+
+      final response = await dio.put('/api/reviews/$reviewId', data: body);
+      final isSuccess = response.data is Map && response.data['success'] == true;
+
+      if (isSuccess) {
+        // Cap nhat lai local state
+        final updated = state.reviews.map((r) {
+          if (r.reviewId == reviewId) {
+            return ReviewModel.fromJson({
+              ...response.data['data'],
+              'reviewer': {'userId': r.userId, 'fullName': r.userName, 'avatarUrl': r.avatarUrl},
+            });
+          }
+          return r;
+        }).toList();
+        state = state.copyWith(isSubmitting: false, reviews: updated);
+      } else {
+        state = state.copyWith(isSubmitting: false);
+      }
+      return isSuccess;
+    } catch (e) {
+      state = state.copyWith(isSubmitting: false, error: e.toString());
+      return false;
+    }
+  }
+
+  Future<bool> deleteReview(String reviewId) async {
+    state = state.copyWith(isSubmitting: true);
+    try {
+      final dio = ref.read(dioProvider);
+      final response = await dio.delete('/api/reviews/$reviewId');
+      final isSuccess = response.data is Map && response.data['success'] == true;
+
+      if (isSuccess) {
+        final updated = state.reviews.where((r) => r.reviewId != reviewId).toList();
+        state = state.copyWith(isSubmitting: false, reviews: updated);
+      } else {
+        state = state.copyWith(isSubmitting: false);
+      }
+      return isSuccess;
     } catch (e) {
       state = state.copyWith(isSubmitting: false, error: e.toString());
       return false;
@@ -103,6 +189,7 @@ class ReviewNotifier extends StateNotifier<ReviewState> {
   }
 }
 
-final reviewProvider = StateNotifierProvider<ReviewNotifier, ReviewState>((ref) {
+final reviewProvider =
+    StateNotifierProvider<ReviewNotifier, ReviewState>((ref) {
   return ReviewNotifier(ref);
 });

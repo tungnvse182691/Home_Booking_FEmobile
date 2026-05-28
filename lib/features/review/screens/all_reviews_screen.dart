@@ -75,7 +75,7 @@ class _AllReviewsScreenState extends ConsumerState<AllReviewsScreen> {
                       if (index == 0) {
                         return Padding(
                           padding: const EdgeInsets.symmetric(vertical: 24.0),
-                          child: RatingSummary(overallRating: 4.8, totalReviews: state.reviews.length),
+                          child: RatingSummary(rating: 4.8, totalReviews: state.reviews.length),
                         );
                       }
                       return ReviewCard(review: state.reviews[index - 1]);

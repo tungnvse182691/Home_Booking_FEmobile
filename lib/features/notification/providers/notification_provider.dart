@@ -1,139 +1,96 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:dio/dio.dart';
-import '../../rooms/providers/room_provider.dart';
+import '../../../core/network/dio_client.dart';
+import '../models/notification_model.dart';
 
-enum NotificationType { booking, payment, system }
+final notificationProvider =
+    StateNotifierProvider<
+      NotificationNotifier,
+      AsyncValue<List<NotificationModel>>
+    >((ref) {
+      return NotificationNotifier(ref);
+    });
 
-class NotificationModel {
-  final String id;
-  final String title;
-  final String content;
-  final DateTime createdAt;
-  final bool isRead;
-  final NotificationType type;
-  final String? relatedId;
+class NotificationNotifier
+    extends StateNotifier<AsyncValue<List<NotificationModel>>> {
+  final Ref _ref;
 
-  NotificationModel({
-    required this.id,
-    required this.title,
-    required this.content,
-    required this.createdAt,
-    this.isRead = false,
-    required this.type,
-    this.relatedId,
-  });
-
-  NotificationModel copyWith({bool? isRead}) {
-    return NotificationModel(
-      id: id,
-      title: title,
-      content: content,
-      createdAt: createdAt,
-      isRead: isRead ?? this.isRead,
-      type: type,
-      relatedId: relatedId,
-    );
-  }
-}
-
-class NotificationState {
-  final List<NotificationModel> notifications;
-  final bool isLoading;
-  final String? error;
-
-  NotificationState({
-    this.notifications = const [],
-    this.isLoading = false,
-    this.error,
-  });
-
-  NotificationState copyWith({
-    List<NotificationModel>? notifications,
-    bool? isLoading,
-    String? error,
-  }) {
-    return NotificationState(
-      notifications: notifications ?? this.notifications,
-      isLoading: isLoading ?? this.isLoading,
-      error: error,
-    );
-  }
-}
-
-class NotificationNotifier extends StateNotifier<NotificationState> {
-  final Ref ref;
-  NotificationNotifier(this.ref) : super(NotificationState()) {
+  NotificationNotifier(this._ref) : super(const AsyncValue.loading()) {
     fetchNotifications();
   }
 
   Future<void> fetchNotifications() async {
-    state = state.copyWith(isLoading: true, error: null);
+    state = const AsyncValue.loading();
     try {
-      // Giả lập gọi API: GET /api/notifications
-      await Future.delayed(const Duration(seconds: 1));
-      
-      final mockData = [
-        NotificationModel(
-          id: '1',
-          title: 'Đặt phòng thành công',
-          content: 'Bạn đã đặt thành công phòng Cozy Center Home.',
-          createdAt: DateTime.now().subtract(const Duration(minutes: 5)),
-          type: NotificationType.booking,
-          isRead: false,
-        ),
-        NotificationModel(
-          id: '2',
-          title: 'Thanh toán hoàn tất',
-          content: 'Giao dịch cho mã đặt phòng #BK123 đã được xác nhận.',
-          createdAt: DateTime.now().subtract(const Duration(hours: 2)),
-          type: NotificationType.payment,
-          isRead: true,
-        ),
-        NotificationModel(
-          id: '3',
-          title: 'Chào mừng bạn',
-          content: 'Chào mừng bạn đến với HomeBooking. Khám phá ngay các ưu đãi mới nhất!',
-          createdAt: DateTime.now().subtract(const Duration(days: 1)),
-          type: NotificationType.system,
-          isRead: true,
-        ),
-      ];
-
-      state = state.copyWith(isLoading: false, notifications: mockData);
-    } catch (e) {
-      state = state.copyWith(isLoading: false, error: e.toString());
+      final dio = _ref.read(dioProvider);
+      final response = await dio.get('/api/notifications');
+      final data = response.data;
+      if (data is List) {
+        final list = data
+            .map((e) => NotificationModel.fromJson(Map<String, dynamic>.from(e as Map)))
+            .toList();
+        state = AsyncValue.data(list);
+        return;
+      }
+      if (data is Map) {
+        if (data['success'] == true) {
+          // BE trả về { items: [...], page, limit, total, totalPages }
+          final wrapper = data['data'];
+          final List items = wrapper is Map
+              ? (wrapper['items'] ?? wrapper['data'] ?? [])
+              : (wrapper as List? ?? []);
+          final list = items
+              .map((e) => NotificationModel.fromJson(Map<String, dynamic>.from(e as Map)))
+              .toList();
+          state = AsyncValue.data(list);
+        } else if (data['data'] is List) {
+          final items = data['data'] as List;
+          final list = items
+              .map((e) => NotificationModel.fromJson(Map<String, dynamic>.from(e as Map)))
+              .toList();
+          state = AsyncValue.data(list);
+        } else {
+          state = AsyncValue.error(
+            data['message'] ?? 'Lỗi tải thông báo',
+            StackTrace.current,
+          );
+        }
+        return;
+      }
+      state = AsyncValue.error('Lỗi tải thông báo', StackTrace.current);
+    } catch (e, stack) {
+      state = AsyncValue.error(e, stack);
     }
   }
 
-  Future<void> markAllAsRead() async {
+  Future<void> markAsRead(String id) async {
     try {
-      // PATCH /api/notifications/read-all
-      final updated = state.notifications.map((n) => n.copyWith(isRead: true)).toList();
-      state = state.copyWith(notifications: updated);
+      final dio = _ref.read(dioProvider);
+      await dio.patch('/api/notifications/$id/read');
+
+      final currentData = state.value;
+      if (currentData != null) {
+        state = AsyncValue.data(
+          currentData
+              .map((n) => n.notificationId == id ? _markRead(n) : n)
+              .toList(),
+        );
+      }
     } catch (e) {
-      state = state.copyWith(error: e.toString());
+      // Handle error
     }
   }
 
-  Future<void> deleteNotification(String id) async {
-    try {
-      // DELETE /api/notifications/:id
-      final updated = state.notifications.where((n) => n.id != id).toList();
-      state = state.copyWith(notifications: updated);
-    } catch (e) {
-      state = state.copyWith(error: e.toString());
-    }
+  NotificationModel _markRead(NotificationModel n) {
+    return NotificationModel(
+      notificationId: n.notificationId,
+      title: n.title,
+      body: n.body,
+      isRead: true,
+      createdAt: n.createdAt,
+    );
   }
 
-  void markAsRead(String id) {
-    final updated = state.notifications.map((n) {
-      if (n.id == id) return n.copyWith(isRead: true);
-      return n;
-    }).toList();
-    state = state.copyWith(notifications: updated);
+  int get unreadCount {
+    return state.value?.where((n) => !n.isRead).length ?? 0;
   }
 }
-
-final notificationProvider = StateNotifierProvider<NotificationNotifier, NotificationState>((ref) {
-  return NotificationNotifier(ref);
-});

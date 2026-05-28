@@ -1,187 +1,207 @@
+﻿import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:cached_network_image/cached_network_image.dart';
-import '../providers/profile_provider.dart';
-import '../../../utils/app_theme.dart';
 
-class ProfileScreen extends ConsumerWidget {
+import '../../auth/providers/auth_provider.dart';
+import '../providers/profile_provider.dart';
+
+class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(profileProvider);
-    final user = state.user;
+  ConsumerState<ProfileScreen> createState() => _ProfileScreenState();
+}
 
-    return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
-      body: state.isLoading && user == null
-          ? const Center(child: CircularProgressIndicator())
-          : CustomScrollView(
-              slivers: [
-                SliverAppBar(
-                  expandedHeight: 280,
-                  pinned: true,
-                  backgroundColor: AppTheme.primary,
-                  flexibleSpace: FlexibleSpaceBar(
-                    background: Container(
-                      decoration: const BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: [AppTheme.primary, Color(0xFFD32F2F)],
-                        ),
-                      ),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const SizedBox(height: 40),
-                          Stack(
-                            children: [
-                              CircleAvatar(
-                                radius: 50,
-                                backgroundColor: Colors.white,
-                                child: CircleAvatar(
-                                  radius: 47,
-                                  backgroundImage: user?.avatar != null ? CachedNetworkImageProvider(user!.avatar!) : null,
-                                  child: user?.avatar == null ? const Icon(Icons.person, size: 50) : null,
-                                ),
-                              ),
-                              Positioned(
-                                bottom: 0,
-                                right: 0,
-                                child: GestureDetector(
-                                  onTap: () => context.push('/edit-profile'),
-                                  child: Container(
-                                    padding: const EdgeInsets.all(6),
-                                    decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
-                                    child: const Icon(Icons.edit, color: AppTheme.primary, size: 16),
-                                  ),
-                                ),
-                              )
-                            ],
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            user?.name ?? 'Khách hàng',
-                            style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
-                          ),
-                          Text(
-                            user?.phone ?? '',
-                            style: TextStyle(color: Colors.white.withOpacity(0.9), fontSize: 14),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.all(24.0),
-                    child: Column(
-                      children: [
-                        // Stats Row
-                        Container(
-                          padding: const EdgeInsets.symmetric(vertical: 20),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(16),
-                            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10)],
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                            children: [
-                              _buildStatItem('12', 'Đặt phòng'),
-                              _buildDivider(),
-                              _buildStatItem('5', 'Yêu thích'),
-                              _buildDivider(),
-                              _buildStatItem('8', 'Đánh giá'),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 24),
-                        // Menu List
-                        _buildMenuSection(context, user),
-                        const SizedBox(height: 32),
-                        // Logout
-                        SizedBox(
-                          width: double.infinity,
-                          child: TextButton(
-                            onPressed: () => _showLogoutDialog(context, ref),
-                            style: TextButton.styleFrom(foregroundColor: AppTheme.primary),
-                            child: const Text('Đăng xuất', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                          ),
-                        ),
-                        const SizedBox(height: 40),
-                      ],
-                    ),
-                  ),
-                )
-              ],
-            ),
-    );
+class _ProfileScreenState extends ConsumerState<ProfileScreen> {
+  final _formKey = GlobalKey<FormState>();
+  final _nameController = TextEditingController();
+  final _phoneController = TextEditingController();
+  final _avatarController = TextEditingController();
+  final _emailController = TextEditingController();
+  bool _controllersSynced = false;
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _phoneController.dispose();
+    _avatarController.dispose();
+    _emailController.dispose();
+    super.dispose();
   }
 
-  Widget _buildStatItem(String value, String label) {
-    return Column(
-      children: [
-        Text(value, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppTheme.textPrimary)),
-        const SizedBox(height: 4),
-        Text(label, style: const TextStyle(fontSize: 12, color: Colors.grey)),
-      ],
-    );
+  void _syncControllersIfNeeded() {
+    final user = ref.read(profileProvider).user;
+    if (user == null) return;
+    if (_controllersSynced &&
+        _nameController.text == user.fullName &&
+        _phoneController.text == (user.phone) &&
+        _avatarController.text == (user.avatarUrl ?? '')) {
+      return;
+    }
+
+    _controllersSynced = true;
+    _nameController.text = user.fullName;
+    _phoneController.text = user.phone;
+    _avatarController.text = user.avatarUrl ?? '';
+    _emailController.text = user.email;
   }
 
-  Widget _buildDivider() {
-    return Container(height: 30, width: 1, color: Colors.grey.shade200);
-  }
+  Future<void> _handleSave() async {
+    if (!_formKey.currentState!.validate()) return;
 
-  Widget _buildMenuSection(BuildContext context, UserModel? user) {
-    return Container(
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16)),
-      child: Column(
-        children: [
-          _buildMenuItem(Icons.person_outline, 'Thông tin cá nhân', () => context.push('/edit-profile')),
-          _buildMenuItem(Icons.lock_outline, 'Đổi mật khẩu', () => context.push('/change-password')),
-          _buildMenuItem(Icons.favorite_border, 'Phòng yêu thích', () => context.push('/favorite')),
-          _buildMenuItem(Icons.notifications_none, 'Thông báo', () => context.push('/notifications')),
-          _buildMenuItem(Icons.star_border, 'Đánh giá của tôi', () => context.push('/my-reviews')),
-          if (user?.role == 'HOST')
-            _buildMenuItem(Icons.home_work_outlined, 'Quản lý phòng', () => context.push('/my-rooms')),
-          _buildMenuItem(Icons.info_outline, 'Về ứng dụng', () {}, isLast: true),
-        ],
+    final success = await ref.read(profileProvider.notifier).updateProfile(
+          _nameController.text.trim(),
+          _phoneController.text.trim(),
+          _avatarController.text.trim().isEmpty ? null : _avatarController.text.trim(),
+        );
+
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(success ? 'Cập nhật thành công' : 'Cập nhật thất bại'),
       ),
     );
   }
 
-  Widget _buildMenuItem(IconData icon, String title, VoidCallback onTap, {bool isLast = false}) {
-    return ListTile(
-      leading: Icon(icon, color: AppTheme.textPrimary, size: 22),
-      title: Text(title, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500)),
-      trailing: const Icon(Icons.chevron_right, size: 18, color: Colors.grey),
-      onTap: onTap,
-      shape: isLast ? null : Border(bottom: BorderSide(color: Colors.grey.shade50)),
-    );
+  Future<void> _handleLogout() async {
+    await ref.read(authStateProvider.notifier).logout();
+    if (mounted) {
+      context.go('/login');
+    }
   }
 
-  void _showLogoutDialog(BuildContext context, WidgetRef ref) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Đăng xuất'),
-        content: const Text('Bạn có chắc muốn đăng xuất khỏi ứng dụng?'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Hủy bỏ', style: TextStyle(color: Colors.grey))),
-          TextButton(
-            onPressed: () async {
-              await ref.read(profileProvider.notifier).logout();
-              if (context.mounted) {
-                context.go('/login');
-              }
-            },
-            child: const Text('Đăng xuất', style: TextStyle(color: AppTheme.primary, fontWeight: FontWeight.bold)),
+  @override
+  Widget build(BuildContext context) {
+    final state = ref.watch(profileProvider);
+    final user = state.user;
+    // Read role from auth state (more reliable than profile state)
+    final authUser = ref.watch(authStateProvider);
+    final isHost = authUser?.role.toUpperCase() == 'HOST';
+
+    if (state.isLoading && user == null) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (user != null) {
+      _syncControllersIfNeeded();
+    }
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Hồ sơ cá nhân', style: TextStyle(fontWeight: FontWeight.bold)),
+      ),
+      body: RefreshIndicator(
+        onRefresh: () => ref.read(profileProvider.notifier).fetchProfile(),
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.all(24),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Center(
+                  child: CircleAvatar(
+                    radius: 48,
+                    backgroundImage: _avatarController.text.isNotEmpty
+                        ? (_avatarController.text.startsWith('http')
+                            ? NetworkImage(_avatarController.text)
+                            : FileImage(File(_avatarController.text)) as ImageProvider)
+                        : null,
+                    child: _avatarController.text.isEmpty
+                        ? const Icon(Icons.person, size: 48)
+                        : null,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                TextFormField(
+                  controller: _nameController,
+                  decoration: const InputDecoration(
+                    labelText: 'Họ và tên',
+                    border: OutlineInputBorder(),
+                  ),
+                  validator: (value) => value == null || value.trim().isEmpty
+                      ? 'Vui lòng nhập họ tên'
+                      : null,
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _emailController,
+                  readOnly: true,
+                  decoration: const InputDecoration(
+                    labelText: 'Email',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _phoneController,
+                  keyboardType: TextInputType.phone,
+                  decoration: const InputDecoration(
+                    labelText: 'Số điện thoại',
+                    border: OutlineInputBorder(),
+                  ),
+                  validator: (value) => value == null || value.trim().isEmpty
+                      ? 'Vui lòng nhập số điện thoại'
+                      : null,
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _avatarController,
+                  decoration: const InputDecoration(
+                    labelText: 'Avatar URL',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                if (state.error != null) ...[
+                  const SizedBox(height: 12),
+                  Text(
+                    state.error!.replaceFirst('Exception: ', ''),
+                    style: const TextStyle(color: Colors.red),
+                  ),
+                ],
+                const SizedBox(height: 24),
+                ElevatedButton(
+                  onPressed: state.isLoading ? null : _handleSave,
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                  ),
+                  child: state.isLoading
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Text('Lưu'),
+                ),
+                // Chỉ hiển thị 'Đánh giá của tôi' cho CUSTOMER, không hiện cho HOST
+                if (!isHost) ...[
+                  const SizedBox(height: 12),
+                  OutlinedButton(
+                    onPressed: () => context.push('/my-reviews'),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                    ),
+                    child: const Text('Đánh giá của tôi'),
+                  ),
+                ],
+                const SizedBox(height: 12),
+                OutlinedButton(
+                  onPressed: _handleLogout,
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    foregroundColor: Colors.red,
+                  ),
+                  child: const Text('Đăng xuất'),
+                ),
+              ],
+            ),
           ),
-        ],
+        ),
       ),
     );
   }

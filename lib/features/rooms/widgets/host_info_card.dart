@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import '../models/room_model.dart';
 
@@ -12,7 +13,14 @@ class HostInfoCard extends StatelessWidget {
       children: [
         CircleAvatar(
           radius: 28,
-          backgroundImage: NetworkImage(host.avatar),
+          backgroundImage: host.avatarUrl != null && host.avatarUrl!.isNotEmpty
+              ? (host.avatarUrl!.startsWith('http')
+                  ? NetworkImage(host.avatarUrl!)
+                  : FileImage(File(host.avatarUrl!)) as ImageProvider)
+              : null,
+          child: host.avatarUrl == null || host.avatarUrl!.isEmpty
+              ? const Icon(Icons.person)
+              : null,
         ),
         const SizedBox(width: 16),
         Expanded(
@@ -20,17 +28,11 @@ class HostInfoCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Chủ nhà: ${host.name}',
+                'Chủ nhà: ${host.fullName}',
                 style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
               ),
-              Row(
-                children: [
-                  const Icon(Icons.star, color: Colors.amber, size: 16),
-                  const SizedBox(width: 4),
-                  Text('${host.rating} đánh giá chủ nhà', 
-                    style: const TextStyle(color: Colors.grey, fontSize: 13)),
-                ],
-              ),
+              const Text('Thông tin chủ nhà', 
+                style: TextStyle(color: Colors.grey, fontSize: 13)),
             ],
           ),
         ),

@@ -1,148 +1,361 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../widgets/invoice_card.dart';
-import '../widgets/payment_method_selector.dart';
-import '../widgets/loading_overlay.dart';
+import 'package:intl/intl.dart';
 import '../providers/booking_provider.dart';
 import '../models/booking_model.dart';
-import '../../../utils/app_theme.dart';
+import 'vnpay_webview_screen.dart';
 
 class PaymentScreen extends ConsumerStatefulWidget {
-  final Map<String, dynamic> bookingData;
+  final String bookingId;
+  final String bookingCode;
+  final String paymentMethod;
+  final double totalAmount;
+  final String roomName;
+  final DateTime checkIn;
+  final DateTime checkOut;
 
-  const PaymentScreen({super.key, required this.bookingData});
+  const PaymentScreen({
+    super.key,
+    required this.bookingId,
+    required this.bookingCode,
+    required this.paymentMethod,
+    required this.totalAmount,
+    required this.roomName,
+    required this.checkIn,
+    required this.checkOut,
+  });
 
   @override
   ConsumerState<PaymentScreen> createState() => _PaymentScreenState();
 }
 
 class _PaymentScreenState extends ConsumerState<PaymentScreen> {
-  PaymentMethod _selectedMethod = PaymentMethod.BANK_CARD;
-  final _noteController = TextEditingController();
+  bool _isProcessing = false;
+  final _currencyFormat = NumberFormat.currency(
+    locale: 'vi_VN',
+    symbol: 'đ',
+    decimalDigits: 0,
+  );
 
-  @override
-  void dispose() {
-    _noteController.dispose();
-    super.dispose();
+  Future<void> _handlePayment() async {
+    final bookingId = widget.bookingId;
+    final paymentMethod = widget.paymentMethod;
+
+    setState(() => _isProcessing = true);
+
+    try {
+      final notifier = ref.read(bookingProvider.notifier);
+
+      // Step 1: Create Payment
+      final paymentResponse = await notifier.createPayment(
+        PaymentRequest(bookingId: bookingId, paymentMethod: paymentMethod),
+      );
+
+      if (paymentResponse == null) throw Exception('Không thể tạo thanh toán');
+
+      final paymentUrl = paymentResponse.paymentUrl?.trim();
+
+      if (paymentUrl != null && paymentUrl.isNotEmpty) {
+        if (!mounted) return;
+
+        // Open payment gateway inside the app via WebView
+        final result = await Navigator.of(context).push<VnPayResult>(
+          MaterialPageRoute(
+            builder: (_) => VnPayWebViewScreen(paymentUrl: paymentUrl),
+          ),
+        );
+
+        if (!mounted) return;
+
+        if (result != null && result.success) {
+          // Payment succeeded – navigate to success screen
+          context.go(
+            '/booking/success',
+            extra: {
+              'bookingId': widget.bookingId,
+              'bookingCode': widget.bookingCode,
+              'paymentMethod': widget.paymentMethod,
+              'totalAmount': widget.totalAmount,
+              'roomName': widget.roomName,
+              'checkIn': widget.checkIn,
+              'checkOut': widget.checkOut,
+              'transactionCode': result.transactionCode,
+            },
+          );
+        } else {
+          // Payment failed or cancelled
+          final msg = result?.message ?? 'Thanh toán không thành công.';
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(msg),
+              backgroundColor: Colors.red.shade600,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+          );
+        }
+      } else if (mounted) {
+        // Non-VNPay (CASH, etc.) – go to success directly
+        context.go(
+          '/booking/success',
+          extra: {
+            'bookingId': widget.bookingId,
+            'bookingCode': widget.bookingCode,
+            'paymentMethod': widget.paymentMethod,
+            'totalAmount': widget.totalAmount,
+            'roomName': widget.roomName,
+            'checkIn': widget.checkIn,
+            'checkOut': widget.checkOut,
+          },
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.toString().replaceFirst('Exception: ', '')),
+            backgroundColor: Colors.red.shade600,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isProcessing = false);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final state = ref.watch(bookingProvider);
+    final bookingCode = widget.bookingCode;
+    final paymentMethod = widget.paymentMethod;
+    final totalAmount = widget.totalAmount;
+    final isVnPay = paymentMethod == 'VNPAY';
+    final dateFormat = DateFormat('dd/MM/yyyy');
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
+      backgroundColor: const Color(0xFFF5F7FA),
       appBar: AppBar(
-        title: const Text('Xác nhận thanh toán', style: TextStyle(color: AppTheme.textPrimary)),
+        title: const Text('Thanh toán'),
         backgroundColor: Colors.white,
-        elevation: 0,
-        leading: const BackButton(color: AppTheme.textPrimary),
+        foregroundColor: Colors.black87,
+        elevation: 0.5,
       ),
-      body: Stack(
-        children: [
-          SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text('TÓM TẮT ĐẶT PHÒNG', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey, fontSize: 13)),
-                const SizedBox(height: 12),
-                InvoiceCard(
-                  roomName: widget.bookingData['roomName'],
-                  thumbnailUrl: widget.bookingData['thumbnailUrl'],
-                  checkIn: widget.bookingData['checkIn'],
-                  checkOut: widget.bookingData['checkOut'],
-                  nights: widget.bookingData['nights'],
-                  totalAmount: widget.bookingData['totalAmount'],
-                  pricePerNight: widget.bookingData['pricePerNight'],
-                ),
-                const SizedBox(height: 32),
-                PaymentMethodSelector(
-                  selected: _selectedMethod,
-                  onChanged: (m) => setState(() => _selectedMethod = m),
-                ),
-                const SizedBox(height: 24),
-                const Text('GHI CHÚ', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: _noteController,
-                  maxLines: 3,
-                  decoration: InputDecoration(
-                    hintText: 'Ghi chú cho host (không bắt buộc)',
-                    fillColor: Colors.white,
-                    filled: true,
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey.shade200)),
-                  ),
-                ),
-                const SizedBox(height: 100),
-              ],
-            ),
-          ),
-          
-          // Sticky Footer
-          Positioned(
-            bottom: 0,
-            left: 0,
-            right: 0,
-            child: Container(
-              padding: const EdgeInsets.all(24),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(20.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Order summary card
+            Container(
+              padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
                 color: Colors.white,
-                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, -5))],
-              ),
-              child: SizedBox(
-                width: double.infinity,
-                height: 52,
-                child: ElevatedButton(
-                  onPressed: state.isLoading ? null : _handlePayment,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppTheme.primary,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.05),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
                   ),
-                  child: const Text('Xác nhận thanh toán', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
-                ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF005BAC).withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Icon(
+                          Icons.receipt_long,
+                          color: Color(0xFF005BAC),
+                          size: 24,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      const Text(
+                        'Tóm tắt đơn hàng',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black87,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  _buildInfoRow('Phòng', widget.roomName),
+                  _buildInfoRow('Mã đặt phòng', bookingCode),
+                  _buildInfoRow('Nhận phòng', dateFormat.format(widget.checkIn)),
+                  _buildInfoRow('Trả phòng', dateFormat.format(widget.checkOut)),
+                  const Divider(height: 24),
+                  _buildInfoRow(
+                    'Phương thức',
+                    isVnPay ? 'VNPay' : paymentMethod,
+                    valueColor: isVnPay ? const Color(0xFF005BAC) : Colors.black87,
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'Tổng thanh toán',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.black87,
+                        ),
+                      ),
+                      Text(
+                        _currencyFormat.format(totalAmount),
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFFE53935),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ),
-          ),
-          
-          if (state.isLoading) const LoadingOverlay(message: 'Đang xử lý thanh toán...'),
-        ],
+            const SizedBox(height: 20),
+
+            // VNPay info banner
+            if (isVnPay)
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      const Color(0xFF005BAC).withValues(alpha: 0.08),
+                      const Color(0xFF005BAC).withValues(alpha: 0.04),
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: const Color(0xFF005BAC).withValues(alpha: 0.15),
+                  ),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(
+                      Icons.info_outline,
+                      size: 20,
+                      color: const Color(0xFF005BAC).withValues(alpha: 0.7),
+                    ),
+                    const SizedBox(width: 12),
+                    const Expanded(
+                      child: Text(
+                        'Cổng thanh toán VNPay sẽ được mở ngay trong ứng dụng. Bạn có thể thanh toán qua thẻ ngân hàng hoặc QR code.',
+                        style: TextStyle(
+                          height: 1.5,
+                          fontSize: 13,
+                          color: Color(0xFF005BAC),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            if (isVnPay) const SizedBox(height: 20),
+
+            // Pay button
+            if (_isProcessing)
+              Column(
+                children: [
+                  const SizedBox(height: 16),
+                  SizedBox(
+                    width: 48,
+                    height: 48,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 3,
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        const Color(0xFF005BAC).withValues(alpha: 0.8),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Đang khởi tạo thanh toán...',
+                    style: TextStyle(
+                      fontStyle: FontStyle.italic,
+                      color: Colors.grey,
+                    ),
+                  ),
+                ],
+              )
+            else
+              ElevatedButton(
+                onPressed: _handlePayment,
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  backgroundColor: isVnPay ? const Color(0xFF005BAC) : Colors.green,
+                  foregroundColor: Colors.white,
+                  elevation: 2,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      isVnPay ? Icons.account_balance : Icons.payments,
+                      size: 22,
+                    ),
+                    const SizedBox(width: 10),
+                    Text(
+                      isVnPay ? 'Thanh toán qua VNPay' : 'Thanh toán ngay',
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }
 
-  Future<void> _handlePayment() async {
-    final booking = BookingModel(
-      roomId: widget.bookingData['roomId'],
-      roomName: widget.bookingData['roomName'],
-      checkInDate: widget.bookingData['checkIn'],
-      checkOutDate: widget.bookingData['checkOut'],
-      totalAmount: widget.bookingData['totalAmount'],
-      paymentMethod: _selectedMethod.name,
-      note: _noteController.text,
+  Widget _buildInfoRow(String label, dynamic value, {Color? valueColor}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
+            style: TextStyle(color: Colors.grey.shade600, fontSize: 14),
+          ),
+          Flexible(
+            child: Text(
+              value.toString(),
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                color: valueColor ?? Colors.black87,
+                fontSize: 14,
+              ),
+              textAlign: TextAlign.end,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      ),
     );
-
-    final success = await ref.read(bookingProvider.notifier).createBooking(booking);
-    
-    if (success && mounted) {
-      context.go('/booking-success', extra: {
-        'bookingId': ref.read(bookingProvider).lastBookingId,
-        'roomName': widget.bookingData['roomName'],
-        'checkIn': widget.bookingData['checkIn'],
-        'checkOut': widget.bookingData['checkOut'],
-        'totalAmount': widget.bookingData['totalAmount'],
-      });
-    } else if (mounted) {
-      final error = ref.read(bookingProvider).error;
-      showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('Lỗi đặt phòng'),
-          content: Text(error ?? 'Có lỗi xảy ra, vui lòng thử lại.'),
-          actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('Đóng'))],
-        ),
-      );
-    }
   }
 }

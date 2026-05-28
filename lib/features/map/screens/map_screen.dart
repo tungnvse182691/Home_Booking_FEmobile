@@ -58,7 +58,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
             options: MapOptions(
               initialCenter: _defaultLocation,
               initialZoom: 14,
-              onTap: (_, __) => mapNotifier.selectRoom(null),
+              onTap: (_, _) => mapNotifier.selectRoom(null),
             ),
             children: [
               TileLayer(

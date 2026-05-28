@@ -1,5 +1,5 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 
 class ImageCarousel extends StatefulWidget {
   final List<String> images;
@@ -16,45 +16,55 @@ class _ImageCarouselState extends State<ImageCarousel> {
 
   @override
   Widget build(BuildContext context) {
+    if (widget.images.isEmpty) {
+      return Container(
+        height: 320,
+        color: Colors.grey.shade200,
+        alignment: Alignment.center,
+        child: const Icon(
+          Icons.image_not_supported_outlined,
+          size: 48,
+          color: Colors.grey,
+        ),
+      );
+    }
+
     return Stack(
       children: [
         SizedBox(
-          height: 350,
+          height: 320,
           child: PageView.builder(
             controller: _pageController,
             onPageChanged: (index) => setState(() => _currentPage = index),
             itemCount: widget.images.length,
             itemBuilder: (context, index) {
-              return CachedNetworkImage(
-                imageUrl: widget.images[index],
-                fit: BoxFit.cover,
-                placeholder: (context, url) => Container(color: Colors.grey[200]),
-              );
+              final imgPath = widget.images[index];
+              return imgPath.startsWith('http')
+                  ? Image.network(
+                      imgPath,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) => Container(
+                        color: Colors.grey[200],
+                        alignment: Alignment.center,
+                        child: const Icon(
+                          Icons.broken_image_outlined,
+                          size: 40,
+                        ),
+                      ),
+                    )
+                  : Image.file(
+                      File(imgPath),
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) => Container(
+                        color: Colors.grey[200],
+                        alignment: Alignment.center,
+                        child: const Icon(
+                          Icons.broken_image_outlined,
+                          size: 40,
+                        ),
+                      ),
+                    );
             },
-          ),
-        ),
-        // Nút Back
-        Positioned(
-          top: 40,
-          left: 16,
-          child: CircleAvatar(
-            backgroundColor: Colors.white,
-            child: IconButton(
-              icon: const Icon(Icons.arrow_back, color: Colors.black),
-              onPressed: () => Navigator.pop(context),
-            ),
-          ),
-        ),
-        // Nút Yêu thích
-        Positioned(
-          top: 40,
-          right: 16,
-          child: CircleAvatar(
-            backgroundColor: Colors.white,
-            child: IconButton(
-              icon: const Icon(Icons.favorite_border, color: Colors.black),
-              onPressed: () {},
-            ),
           ),
         ),
         // Indicator
@@ -64,7 +74,7 @@ class _ImageCarouselState extends State<ImageCarousel> {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.6),
+              color: Colors.black.withValues(alpha: 0.6),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Text(

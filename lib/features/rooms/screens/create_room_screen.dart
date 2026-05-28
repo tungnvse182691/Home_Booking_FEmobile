@@ -1,10 +1,9 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_map/flutter_map.dart';
-import 'package:latlong2/latlong.dart';
 import 'package:image_picker/image_picker.dart';
-import '../../../utils/app_theme.dart';
 import '../providers/create_room_provider.dart';
+import '../providers/room_list_provider.dart';
+import '../models/room_model.dart';
 import '../widgets/step_indicator.dart';
 import '../widgets/image_picker_grid.dart';
 
@@ -17,20 +16,39 @@ class CreateRoomScreen extends ConsumerStatefulWidget {
 
 class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
   final _formKey = GlobalKey<FormState>();
+
+  // Step 1 controllers
   final _nameController = TextEditingController();
   final _descController = TextEditingController();
   final _priceController = TextEditingController();
+  final _maxGuestsController = TextEditingController(text: '2');
+  final _bedroomsController = TextEditingController(text: '1');
+  final _bathroomsController = TextEditingController(text: '1');
+
+  // Step 2 controllers (địa chỉ — không còn map)
   final _addressController = TextEditingController();
-  final List<String> _amenityOptions = [
-    'Wifi', 'Bếp', 'Bể bơi', 'Điều hòa', 'Máy giặt', 'Chỗ đậu xe', 'TV', 'Tủ lạnh'
-  ];
+  final _cityController = TextEditingController();
+  final _districtController = TextEditingController();
+  final _wardController = TextEditingController();
+  final _areaController = TextEditingController();
+  final _latController = TextEditingController(text: '10.7769');
+  final _lngController = TextEditingController(text: '106.7009');
 
   @override
   void dispose() {
     _nameController.dispose();
     _descController.dispose();
     _priceController.dispose();
+    _maxGuestsController.dispose();
+    _bedroomsController.dispose();
+    _bathroomsController.dispose();
     _addressController.dispose();
+    _cityController.dispose();
+    _districtController.dispose();
+    _wardController.dispose();
+    _areaController.dispose();
+    _latController.dispose();
+    _lngController.dispose();
     super.dispose();
   }
 
@@ -38,15 +56,18 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
   Widget build(BuildContext context) {
     final state = ref.watch(createRoomProvider);
     final notifier = ref.read(createRoomProvider.notifier);
+    // Watch at top-level to avoid "modify during build" error
+    final roomTypes = ref.watch(roomTypesProvider).value ?? [];
+    final amenities = ref.watch(amenitiesProvider).value ?? [];
 
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text('Tạo phòng mới', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const Text(
+          'Tạo phòng mới',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
         centerTitle: true,
-        backgroundColor: Colors.white,
-        elevation: 0,
-        foregroundColor: AppTheme.textPrimary,
       ),
       body: Column(
         children: [
@@ -57,7 +78,7 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
           Expanded(
             child: SingleChildScrollView(
               padding: const EdgeInsets.all(24),
-              child: _buildStepContent(state, notifier),
+              child: _buildStepContent(state, notifier, roomTypes, amenities),
             ),
           ),
           _buildBottomAction(state, notifier),
@@ -66,194 +87,413 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
     );
   }
 
-  Widget _buildStepContent(CreateRoomState state, CreateRoomNotifier notifier) {
+  Widget _buildStepContent(
+    CreateRoomState state,
+    CreateRoomNotifier notifier,
+    List<RoomType> roomTypes,
+    List<Amenity> amenities,
+  ) {
     switch (state.currentStep) {
       case 1:
-        return _buildStep1(state, notifier);
+        return _buildStep1(state, notifier, roomTypes);
       case 2:
         return _buildStep2(state, notifier);
       case 3:
-        return _buildStep3(state, notifier);
+        return _buildStep3(state, notifier, amenities);
       default:
         return const SizedBox();
     }
   }
 
-  Widget _buildStep1(CreateRoomState state, CreateRoomNotifier notifier) {
+  // ── Step 1: Thông tin cơ bản ─────────────────────────────────────────────
+  Widget _buildStep1(
+    CreateRoomState state,
+    CreateRoomNotifier notifier,
+    List<RoomType> roomTypes,
+  ) {
     return Form(
       key: _formKey,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Thông tin cơ bản', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          const Text(
+            'Thông tin cơ bản',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
           const SizedBox(height: 24),
           TextFormField(
             controller: _nameController,
-            decoration: const InputDecoration(labelText: 'Tên phòng', hintText: 'VD: Căn hộ Cozy trung tâm'),
-            validator: (v) => (v == null || v.isEmpty) ? 'Vui lòng nhập tên phòng' : null,
+            decoration: const InputDecoration(
+              labelText: 'Tên phòng *',
+              border: OutlineInputBorder(),
+            ),
+            validator: (v) => (v == null || v.trim().isEmpty)
+                ? 'Vui lòng nhập tên phòng'
+                : null,
           ),
           const SizedBox(height: 16),
           TextFormField(
             controller: _descController,
-            maxLines: 5,
-            maxLength: 500,
-            decoration: const InputDecoration(labelText: 'Mô tả', hintText: 'Nhập mô tả chi tiết về phòng...'),
-            validator: (v) => (v == null || v.isEmpty) ? 'Vui lòng nhập mô tả' : null,
+            maxLines: 3,
+            decoration: const InputDecoration(
+              labelText: 'Mô tả',
+              border: OutlineInputBorder(),
+            ),
           ),
           const SizedBox(height: 16),
-          TextFormField(
-            controller: _priceController,
-            keyboardType: TextInputType.number,
-            decoration: const InputDecoration(labelText: 'Giá / đêm (VNĐ)', suffixText: 'đ'),
-            validator: (v) {
-              if (v == null || v.isEmpty) return 'Vui lòng nhập giá';
-              if (double.tryParse(v) == null) return 'Giá không hợp lệ';
-              return null;
-            },
+          DropdownButtonFormField<String>(
+            value: state.roomTypeId.isEmpty ? null : state.roomTypeId,
+            decoration: const InputDecoration(
+              labelText: 'Loại phòng *',
+              border: OutlineInputBorder(),
+            ),
+            items: roomTypes
+                .map(
+                  (e) => DropdownMenuItem(
+                    value: e.roomTypeId,
+                    child: Text(e.name),
+                  ),
+                )
+                .toList(),
+            onChanged: (v) => notifier.updateField(roomTypeId: v),
+            validator: (v) =>
+                (v == null || v.isEmpty) ? 'Vui lòng chọn loại phòng' : null,
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: TextFormField(
+                  controller: _priceController,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(
+                    labelText: 'Giá/đêm *',
+                    suffixText: 'đ',
+                    border: OutlineInputBorder(),
+                  ),
+                  validator: (v) {
+                    if (v == null || v.trim().isEmpty) {
+                      return 'Nhập giá';
+                    }
+                    final p = double.tryParse(v.trim());
+                    if (p == null || p <= 0) return 'Giá không hợp lệ';
+                    return null;
+                  },
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: TextFormField(
+                  controller: _maxGuestsController,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(
+                    labelText: 'Số khách tối đa',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: TextFormField(
+                  controller: _bedroomsController,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(
+                    labelText: 'Phòng ngủ',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: TextFormField(
+                  controller: _bathroomsController,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(
+                    labelText: 'Phòng tắm',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          SwitchListTile(
+            title: const Text('Phòng nổi bật (Featured)'),
+            value: state.isFeatured,
+            onChanged: (v) => notifier.updateField(isFeatured: v),
           ),
         ],
       ),
     );
   }
 
+  // ── Step 2: Vị trí (không còn map) ──────────────────────────────────────
   Widget _buildStep2(CreateRoomState state, CreateRoomNotifier notifier) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Hình ảnh (Tối đa 5)', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 16),
-        ImagePickerGrid(
-          images: state.images,
-          onPick: () async {
-            final images = await ImagePicker().pickMultiImage();
-            if (images.isNotEmpty) notifier.addImages(images);
-          },
-          onRemove: (index) => notifier.removeImage(index),
+        const Text(
+          'Vị trí',
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
         ),
-        const SizedBox(height: 32),
-        const Text('Tiện ích', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 12),
-        Wrap(
-          spacing: 8,
-          children: _amenityOptions.map((amenity) {
-            final isSelected = state.selectedAmenities.contains(amenity);
-            return FilterChip(
-              label: Text(amenity),
-              selected: isSelected,
-              onSelected: (_) => notifier.toggleAmenity(amenity),
-              selectedColor: AppTheme.primary.withOpacity(0.2),
-              checkmarkColor: AppTheme.primary,
-            );
-          }).toList(),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildStep3(CreateRoomState state, CreateRoomNotifier notifier) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text('Vị trí', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 16),
-        Container(
-          height: 250,
-          decoration: BoxDecoration(borderRadius: BorderRadius.circular(16), border: Border.all(color: Colors.grey[300]!)),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(16),
-            child: FlutterMap(
-              options: MapOptions(
-                initialCenter: const LatLng(10.7769, 106.7009),
-                initialZoom: 13,
-                onTap: (tapPosition, point) => notifier.setLocation(point.latitude, point.longitude),
-              ),
-              children: [
-                TileLayer(urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png'),
-                if (state.lat != null && state.lng != null)
-                  MarkerLayer(
-                    markers: [
-                      Marker(
-                        point: LatLng(state.lat!, state.lng!),
-                        width: 40, height: 40,
-                        child: const Icon(Icons.location_on, color: AppTheme.primary, size: 40),
-                      ),
-                    ],
-                  ),
-              ],
-            ),
+        const SizedBox(height: 24),
+        TextFormField(
+          controller: _cityController,
+          decoration: const InputDecoration(
+            labelText: 'Thành phố *',
+            border: OutlineInputBorder(),
+            hintText: 'VD: Hồ Chí Minh',
           ),
         ),
         const SizedBox(height: 16),
-        if (state.lat != null)
-          Text('Tọa độ: ${state.lat!.toStringAsFixed(4)}, ${state.lng!.toStringAsFixed(4)}',
-              style: const TextStyle(color: Colors.grey)),
-        const SizedBox(height: 24),
+        Row(
+          children: [
+            Expanded(
+              child: TextFormField(
+                controller: _districtController,
+                decoration: const InputDecoration(
+                  labelText: 'Quận/Huyện',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: TextFormField(
+                controller: _wardController,
+                decoration: const InputDecoration(
+                  labelText: 'Phường/Xã',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        TextFormField(
+          controller: _areaController,
+          decoration: const InputDecoration(
+            labelText: 'Tên khu vực',
+            border: OutlineInputBorder(),
+            hintText: 'VD: Quận 1, Bình Thạnh...',
+          ),
+        ),
+        const SizedBox(height: 16),
         TextFormField(
           controller: _addressController,
-          decoration: const InputDecoration(labelText: 'Địa chỉ cụ thể', hintText: 'VD: 123 Lê Lợi, Quận 1...'),
-          onChanged: (v) => notifier.setAddress(v),
+          decoration: const InputDecoration(
+            labelText: 'Địa chỉ cụ thể *',
+            border: OutlineInputBorder(),
+            hintText: 'VD: 123 Nguyễn Huệ',
+          ),
+        ),
+        const SizedBox(height: 16),
+        const Text(
+          'Tọa độ (tùy chọn)',
+          style: TextStyle(fontSize: 14, color: Colors.grey),
+        ),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Expanded(
+              child: TextFormField(
+                controller: _latController,
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
+                decoration: const InputDecoration(
+                  labelText: 'Vĩ độ (Lat)',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: TextFormField(
+                controller: _lngController,
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
+                decoration: const InputDecoration(
+                  labelText: 'Kinh độ (Lng)',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+            ),
+          ],
         ),
       ],
     );
   }
 
-  Widget _buildBottomAction(CreateRoomState state, CreateRoomNotifier notifier) {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, -5))],
-      ),
+  // ── Step 3: Hình ảnh & Tiện ích ─────────────────────────────────────────
+  Widget _buildStep3(
+    CreateRoomState state,
+    CreateRoomNotifier notifier,
+    List<Amenity> amenities,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Hình ảnh & Tiện ích',
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 24),
+        const Text('Hình ảnh (Tối đa 5)'),
+        const SizedBox(height: 8),
+        ImagePickerGrid(
+          images: state.images,
+          existingUrls: state.imageUrls,
+          onPick: () async {
+            final picked = await ImagePicker().pickMultiImage();
+            if (picked.isNotEmpty) notifier.addImages(picked);
+          },
+          onRemove: (i) => notifier.removeImage(i),
+          onRemoveUrl: (i) => notifier.removeImageUrl(i),
+        ),
+        const SizedBox(height: 16),
+        TextFormField(
+          decoration: const InputDecoration(
+            labelText: 'Hoặc nhập URL hình ảnh',
+            suffixIcon: Icon(Icons.add),
+            border: OutlineInputBorder(),
+          ),
+          onFieldSubmitted: (v) {
+            if (v.isNotEmpty) notifier.addImageUrl(v);
+          },
+        ),
+        const SizedBox(height: 24),
+        const Text('Tiện ích'),
+        const SizedBox(height: 8),
+        amenities.isEmpty
+            ? const Center(child: CircularProgressIndicator())
+            : Wrap(
+                spacing: 8,
+                runSpacing: 4,
+                children: amenities.map((a) {
+                  final isSelected = state.selectedAmenityIds.contains(
+                    a.amenityId,
+                  );
+                  return FilterChip(
+                    label: Text(a.name),
+                    selected: isSelected,
+                    onSelected: (_) => notifier.toggleAmenity(a.amenityId),
+                    selectedColor: Colors.blue.withValues(alpha: 0.2),
+                  );
+                }).toList(),
+              ),
+      ],
+    );
+  }
+
+  // ── Bottom action bar ────────────────────────────────────────────────────
+  Widget _buildBottomAction(
+    CreateRoomState state,
+    CreateRoomNotifier notifier,
+  ) {
+    return Padding(
+      padding: const EdgeInsets.all(24.0),
       child: Row(
         children: [
-          if (state.currentStep > 1)
+          if (state.currentStep > 1) ...[
             Expanded(
               child: OutlinedButton(
                 onPressed: () => notifier.setStep(state.currentStep - 1),
                 child: const Text('Quay lại'),
               ),
             ),
-          if (state.currentStep > 1) const SizedBox(width: 16),
+            const SizedBox(width: 16),
+          ],
           Expanded(
             flex: 2,
             child: ElevatedButton(
-              onPressed: state.isLoading ? null : () async {
-                if (state.currentStep == 1) {
-                  if (_formKey.currentState!.validate()) {
-                    notifier.updateBasicInfo(
-                      name: _nameController.text,
-                      description: _descController.text,
-                      price: double.parse(_priceController.text),
-                    );
-                    notifier.setStep(2);
-                  }
-                } else if (state.currentStep == 2) {
-                  // Đã bỏ qua kiểm tra ảnh để test UI
-                  notifier.setStep(3);
-                } else {
-                  if (state.lat == null) {
-                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Vui lòng chọn vị trí trên bản đồ')));
-                    return;
-                  }
-                  final success = await notifier.submit();
-                  if (success && mounted) {
-                    Navigator.pop(context);
-                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Tạo phòng thành công!'), backgroundColor: AppTheme.success));
-                  }
-                }
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.primary,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              ),
+              onPressed: state.isLoading
+                  ? null
+                  : () => _handleNext(state, notifier),
               child: state.isLoading
-                  ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                  : Text(state.currentStep < 3 ? 'Tiếp theo' : 'Tạo phòng', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                  ? const SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(
+                        color: Colors.white,
+                        strokeWidth: 2,
+                      ),
+                    )
+                  : Text(state.currentStep < 3 ? 'Tiếp theo' : 'Hoàn tất'),
             ),
           ),
         ],
       ),
     );
+  }
+
+  Future<void> _handleNext(
+    CreateRoomState state,
+    CreateRoomNotifier notifier,
+  ) async {
+    if (state.currentStep == 1) {
+      if (!_formKey.currentState!.validate()) return;
+      notifier.updateField(
+        name: _nameController.text.trim(),
+        description: _descController.text.trim(),
+        price: double.tryParse(_priceController.text.trim()) ?? 0,
+        maxGuests: int.tryParse(_maxGuestsController.text.trim()) ?? 2,
+        bedrooms: int.tryParse(_bedroomsController.text.trim()) ?? 1,
+        bathrooms: int.tryParse(_bathroomsController.text.trim()) ?? 1,
+      );
+      notifier.setStep(2);
+      return;
+    }
+
+    if (state.currentStep == 2) {
+      final city = _cityController.text.trim();
+      if (city.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Vui lòng nhập thành phố'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+      final address = _addressController.text.trim();
+      if (address.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Vui lòng nhập địa chỉ cụ thể'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+      notifier.updateField(
+        city: city,
+        district: _districtController.text.trim(),
+        ward: _wardController.text.trim(),
+        areaName: _areaController.text.trim(),
+      );
+      notifier.setAddress(address);
+      final lat = double.tryParse(_latController.text.trim()) ?? 10.7769;
+      final lng = double.tryParse(_lngController.text.trim()) ?? 106.7009;
+      notifier.setLocation(lat, lng);
+      notifier.setStep(3);
+      return;
+    }
+
+    // Step 3 → submit
+    final success = await notifier.submit();
+    if (success && mounted) {
+      Navigator.pop(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Tạo phòng thành công!'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    }
   }
 }

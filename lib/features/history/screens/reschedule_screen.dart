@@ -42,7 +42,11 @@ class _RescheduleScreenState extends ConsumerState<RescheduleScreen> {
     // Chuyển đổi blockedDates, ngoại trừ khoảng thời gian hiện tại của booking này
     _blockedDateTimes = widget.blockedDates
         .map((d) => DateTime.parse(d))
-        .where((d) => d.isBefore(widget.currentCheckIn) || d.isAfter(widget.currentCheckOut))
+        .where(
+          (d) =>
+              d.isBefore(widget.currentCheckIn) ||
+              d.isAfter(widget.currentCheckOut),
+        )
         .map((d) => DateTime(d.year, d.month, d.day))
         .toList();
   }
@@ -63,13 +67,18 @@ class _RescheduleScreenState extends ConsumerState<RescheduleScreen> {
   Widget build(BuildContext context) {
     final currencyFormat = NumberFormat.currency(locale: 'vi_VN', symbol: 'đ');
     final dateFormat = DateFormat('dd/MM/yyyy');
-    final oldNights = widget.currentCheckOut.difference(widget.currentCheckIn).inDays;
+    final oldNights = widget.currentCheckOut
+        .difference(widget.currentCheckIn)
+        .inDays;
     final oldTotal = oldNights * widget.pricePerNight;
 
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text('Đổi ngày đặt phòng', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+        title: const Text(
+          'Đổi ngày đặt phòng',
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+        ),
         backgroundColor: Colors.white,
         foregroundColor: AppTheme.textPrimary,
         elevation: 0,
@@ -86,7 +95,10 @@ class _RescheduleScreenState extends ConsumerState<RescheduleScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Ngày hiện tại:', style: TextStyle(color: Colors.grey, fontSize: 13)),
+                  const Text(
+                    'Ngày hiện tại:',
+                    style: TextStyle(color: Colors.grey, fontSize: 13),
+                  ),
                   const SizedBox(height: 4),
                   Text(
                     '${dateFormat.format(widget.currentCheckIn)} → ${dateFormat.format(widget.currentCheckOut)} | $oldNights đêm',
@@ -108,12 +120,17 @@ class _RescheduleScreenState extends ConsumerState<RescheduleScreen> {
               rangeStartDay: _rangeStart,
               rangeEndDay: _rangeEnd,
               rangeSelectionMode: RangeSelectionMode.enforced,
-              headerStyle: const HeaderStyle(formatButtonVisible: false, titleCentered: true),
+              headerStyle: const HeaderStyle(
+                formatButtonVisible: false,
+                titleCentered: true,
+              ),
               enabledDayPredicate: (day) => !_isBlocked(day),
               onRangeSelected: (start, end, focusedDay) {
                 if (start != null && end != null) {
                   if (_rangeContainsBlocked(start, end)) {
-                    Fluttertoast.showToast(msg: "Khoảng ngày này có ngày đã được đặt");
+                    Fluttertoast.showToast(
+                      msg: "Khoảng ngày này có ngày đã được đặt",
+                    );
                     setState(() {
                       _rangeStart = null;
                       _rangeEnd = null;
@@ -128,10 +145,19 @@ class _RescheduleScreenState extends ConsumerState<RescheduleScreen> {
                 });
               },
               calendarStyle: CalendarStyle(
-                rangeHighlightColor: AppTheme.primary.withOpacity(0.1),
-                rangeStartDecoration: const BoxDecoration(color: AppTheme.primary, shape: BoxShape.circle),
-                rangeEndDecoration: const BoxDecoration(color: AppTheme.primary, shape: BoxShape.circle),
-                todayDecoration: BoxDecoration(color: AppTheme.primary.withOpacity(0.3), shape: BoxShape.circle),
+                rangeHighlightColor: AppTheme.primary.withValues(alpha: 0.1),
+                rangeStartDecoration: const BoxDecoration(
+                  color: AppTheme.primary,
+                  shape: BoxShape.circle,
+                ),
+                rangeEndDecoration: const BoxDecoration(
+                  color: AppTheme.primary,
+                  shape: BoxShape.circle,
+                ),
+                todayDecoration: BoxDecoration(
+                  color: AppTheme.primary.withValues(alpha: 0.3),
+                  shape: BoxShape.circle,
+                ),
               ),
             ),
 
@@ -151,14 +177,23 @@ class _RescheduleScreenState extends ConsumerState<RescheduleScreen> {
                     onPressed: _isLoading ? null : _handleReschedule,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppTheme.primary,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                     ),
                     child: _isLoading
                         ? const CircularProgressIndicator(color: Colors.white)
-                        : const Text('Xác nhận đổi ngày', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+                        : const Text(
+                            'Xác nhận đổi ngày',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                          ),
                   ),
                 ),
-              )
+              ),
             ],
             const SizedBox(height: 40),
           ],
@@ -167,7 +202,11 @@ class _RescheduleScreenState extends ConsumerState<RescheduleScreen> {
     );
   }
 
-  Widget _buildComparison(NumberFormat currency, DateFormat date, double oldTotal) {
+  Widget _buildComparison(
+    NumberFormat currency,
+    DateFormat date,
+    double oldTotal,
+  ) {
     final newNights = _rangeEnd!.difference(_rangeStart!).inDays;
     final newTotal = newNights * widget.pricePerNight;
     final diff = newTotal - oldTotal;
@@ -177,11 +216,22 @@ class _RescheduleScreenState extends ConsumerState<RescheduleScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Chi tiết thay đổi:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+          const Text(
+            'Chi tiết thay đổi:',
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+          ),
           const SizedBox(height: 16),
-          _buildInfoRow('Ngày mới', '${date.format(_rangeStart!)} - ${date.format(_rangeEnd!)}', isHighlight: true),
+          _buildInfoRow(
+            'Ngày mới',
+            '${date.format(_rangeStart!)} - ${date.format(_rangeEnd!)}',
+            isHighlight: true,
+          ),
           _buildInfoRow('Số đêm', '$newNights đêm', isHighlight: true),
-          _buildInfoRow('Tổng tiền mới', currency.format(newTotal), isHighlight: true),
+          _buildInfoRow(
+            'Tổng tiền mới',
+            currency.format(newTotal),
+            isHighlight: true,
+          ),
           if (diff != 0)
             _buildInfoRow(
               diff > 0 ? 'Phí chênh lệch' : 'Hoàn trả',
@@ -193,7 +243,12 @@ class _RescheduleScreenState extends ConsumerState<RescheduleScreen> {
     );
   }
 
-  Widget _buildInfoRow(String label, String value, {bool isHighlight = false, Color? valueColor}) {
+  Widget _buildInfoRow(
+    String label,
+    String value, {
+    bool isHighlight = false,
+    Color? valueColor,
+  }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Row(
@@ -204,7 +259,9 @@ class _RescheduleScreenState extends ConsumerState<RescheduleScreen> {
             value,
             style: TextStyle(
               fontWeight: isHighlight ? FontWeight.bold : FontWeight.w500,
-              color: valueColor ?? (isHighlight ? AppTheme.textPrimary : Colors.grey[700]),
+              color:
+                  valueColor ??
+                  (isHighlight ? AppTheme.textPrimary : Colors.grey[700]),
             ),
           ),
         ],
@@ -218,13 +275,19 @@ class _RescheduleScreenState extends ConsumerState<RescheduleScreen> {
       // PATCH /api/bookings/:id/reschedule
       // Body: { newCheckIn, newCheckOut, newTotalAmount }
       await Future.delayed(const Duration(seconds: 2));
-      
+
       if (mounted) {
-        Fluttertoast.showToast(msg: 'Đổi ngày thành công!', backgroundColor: Colors.green);
+        Fluttertoast.showToast(
+          msg: 'Đổi ngày thành công!',
+          backgroundColor: Colors.green,
+        );
         Navigator.pop(context, true);
       }
     } catch (e) {
-      Fluttertoast.showToast(msg: 'Lỗi: ${e.toString()}', backgroundColor: Colors.red);
+      Fluttertoast.showToast(
+        msg: 'Lỗi: ${e.toString()}',
+        backgroundColor: Colors.red,
+      );
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }

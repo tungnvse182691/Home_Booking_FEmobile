@@ -21,7 +21,11 @@ class BookingSuccessScreen extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.check_circle_rounded, color: Colors.green, size: 100),
+              const Icon(
+                Icons.check_circle_rounded,
+                color: Colors.green,
+                size: 100,
+              ),
               const SizedBox(height: 24),
               const Text(
                 'Đặt phòng thành công! 🎉',
@@ -29,7 +33,7 @@ class BookingSuccessScreen extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               Text(
-                'Mã đặt phòng: #${successData["bookingId"]}',
+                'Mã đặt phòng: ${successData["bookingCode"] ?? successData["bookingId"]}',
                 style: const TextStyle(
                   color: AppTheme.primary,
                   fontWeight: FontWeight.bold,
@@ -46,7 +50,10 @@ class BookingSuccessScreen extends StatelessWidget {
                 ),
                 child: Column(
                   children: [
-                    _buildSummaryRow('Homestay', successData['roomName']?.toString() ?? ''),
+                    _buildSummaryRow(
+                      'Homestay',
+                      successData['roomName']?.toString() ?? '',
+                    ),
                     const SizedBox(height: 12),
                     _buildSummaryRow(
                       'Thời gian',
@@ -68,18 +75,23 @@ class BookingSuccessScreen extends StatelessWidget {
                   onPressed: () => context.go('/home'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppTheme.primary,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
                   child: const Text(
                     'Về trang chủ',
-                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
               ),
               const SizedBox(height: 16),
               TextButton(
                 onPressed: () {
-                  context.go('/history');
+                  context.go('/booking/history');
                 },
                 child: const Text(
                   'Xem lịch sử đặt phòng',

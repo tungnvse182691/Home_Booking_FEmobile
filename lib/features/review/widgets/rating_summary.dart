@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 import '../../../utils/app_theme.dart';
 
 class RatingSummary extends StatelessWidget {
-  final double overallRating;
+  final double rating;
   final int totalReviews;
 
   const RatingSummary({
     super.key,
-    required this.overallRating,
+    required this.rating,
     required this.totalReviews,
   });
 
@@ -19,13 +19,13 @@ class RatingSummary extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              overallRating.toString(),
+              rating.toString(),
               style: const TextStyle(fontSize: 48, fontWeight: FontWeight.bold),
             ),
             Row(
               children: List.generate(5, (index) {
                 return Icon(
-                  index < overallRating.floor() ? Icons.star_rounded : Icons.star_half_rounded,
+                  index < rating.floor() ? Icons.star_rounded : Icons.star_half_rounded,
                   color: Colors.amber,
                   size: 20,
                 );

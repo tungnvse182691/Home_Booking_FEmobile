@@ -13,6 +13,11 @@ class StatusBadge extends StatelessWidget {
     String text;
 
     switch (status) {
+      case BookingStatus.PENDING:
+        bgColor = Colors.orange.shade50;
+        textColor = Colors.orange.shade700;
+        text = 'Chờ xác nhận';
+        break;
       case BookingStatus.CONFIRMED:
         bgColor = Colors.blue.shade50;
         textColor = Colors.blue.shade700;

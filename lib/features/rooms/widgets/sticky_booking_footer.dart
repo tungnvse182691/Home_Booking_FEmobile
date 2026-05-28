@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:go_router/go_router.dart';
 import '../../../utils/app_theme.dart';
 import '../models/room_model.dart';
-import '../../booking/screens/booking_calendar_screen.dart';
 
 class StickyBookingFooter extends StatelessWidget {
   final RoomModel room;
@@ -20,10 +20,10 @@ class StickyBookingFooter extends StatelessWidget {
         border: Border(top: BorderSide(color: Colors.grey.shade200)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, -5),
-          )
+          ),
         ],
       ),
       child: SafeArea(
@@ -35,39 +35,39 @@ class StickyBookingFooter extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  currencyFormat.format(room.price),
+                  currencyFormat.format(room.pricePerNight),
                   style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                     color: AppTheme.primary,
                   ),
                 ),
-                const Text('đêm', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                const Text(
+                  'đêm',
+                  style: TextStyle(fontSize: 12, color: Colors.grey),
+                ),
               ],
             ),
             ElevatedButton(
               onPressed: () {
-                showModalBottomSheet(
-                  context: context,
-                  isScrollControlled: true,
-                  backgroundColor: Colors.transparent,
-                  builder: (context) => BookingCalendarScreen(
-                    roomId: room.id,
-                    roomName: room.name,
-                    pricePerNight: room.price,
-                    blockedDates: room.blockedDates,
-                    thumbnailUrl: room.imageUrl,
-                  ),
-                );
+                context.push('/booking/create?roomId=${room.roomId}');
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppTheme.primary,
-                padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 14),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 40,
+                  vertical: 14,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
               child: const Text(
                 'Đặt ngay',
-                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
           ],

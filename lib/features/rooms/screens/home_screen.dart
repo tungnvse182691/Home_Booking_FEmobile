@@ -33,7 +33,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   void _onScroll() {
-    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent - 200) {
       ref.read(roomNotifierProvider.notifier).fetchRooms();
     }
   }
@@ -47,7 +48,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       appBar: AppBar(
         title: const Text(
           'Homestay Booking',
-          style: TextStyle(fontWeight: FontWeight.bold, color: AppTheme.textPrimary),
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: AppTheme.textPrimary,
+          ),
         ),
         backgroundColor: Colors.white,
         elevation: 0,
@@ -79,15 +83,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           borderRadius: BorderRadius.circular(12),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.03),
+                              color: Colors.black.withValues(alpha: 0.03),
                               blurRadius: 10,
-                            )
+                            ),
                           ],
                         ),
                         child: TextField(
                           controller: _searchController,
                           onChanged: (value) {
-                            ref.read(roomFilterProvider.notifier).update(
+                            ref
+                                .read(roomFilterProvider.notifier)
+                                .update(
                                   (state) => state.copyWith(searchQuery: value),
                                 );
                           },
@@ -119,7 +125,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         ),
                         child: const Icon(Icons.tune, color: Colors.white),
                       ),
-                    )
+                    ),
                   ],
                 ),
               ),
@@ -146,7 +152,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       const SizedBox(height: 16),
                       const Text(
                         'Không tìm thấy phòng nào!',
-                        style: TextStyle(fontSize: 16, color: Colors.grey, fontWeight: FontWeight.w500),
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Colors.grey,
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
                     ],
                   ),
@@ -160,27 +170,38 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     (context, index) {
                       if (index < roomState.rooms.length) {
                         final room = roomState.rooms[index];
-                        final isFavorite = ref.watch(favoriteProvider.notifier).isFavorite(room.id);
+                        final isFavorite = ref
+                            .watch(favoriteProvider.notifier)
+                            .isFavorite(room.id);
                         return RoomCard(
                           room: room,
                           isFavorite: isFavorite,
                           margin: const EdgeInsets.only(bottom: 20),
                           onTap: () => context.push('/room-detail/${room.id}'),
-                          onFavoriteToggle: () => ref.read(favoriteProvider.notifier).toggleFavorite(room),
+                          onFavoriteToggle: () => ref
+                              .read(favoriteProvider.notifier)
+                              .toggleFavorite(room.id),
                         );
                       } else if (roomState.hasMore) {
                         return const Padding(
                           padding: EdgeInsets.symmetric(vertical: 16),
-                          child: Center(child: CircularProgressIndicator(color: AppTheme.primary)),
+                          child: Center(
+                            child: CircularProgressIndicator(
+                              color: AppTheme.primary,
+                            ),
+                          ),
                         );
                       } else {
                         return const Padding(
                           padding: EdgeInsets.symmetric(vertical: 16),
-                          child: Center(child: Text('Đã hiển thị tất cả homestay')),
+                          child: Center(
+                            child: Text('Đã hiển thị tất cả homestay'),
+                          ),
                         );
                       }
                     },
-                    childCount: roomState.rooms.length + (roomState.hasMore ? 1 : 0),
+                    childCount:
+                        roomState.rooms.length + (roomState.hasMore ? 1 : 0),
                   ),
                 ),
               ),
@@ -210,10 +231,22 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         showUnselectedLabels: true,
         type: BottomNavigationBarType.fixed,
         items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home_filled), label: 'Trang chủ'),
-          BottomNavigationBarItem(icon: Icon(Icons.favorite_border), label: 'Yêu thích'),
-          BottomNavigationBarItem(icon: Icon(Icons.book_online_outlined), label: 'Đặt phòng'),
-          BottomNavigationBarItem(icon: Icon(Icons.person_outline), label: 'Cá nhân'),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home_filled),
+            label: 'Trang chủ',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.favorite_border),
+            label: 'Yêu thích',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.book_online_outlined),
+            label: 'Đặt phòng',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person_outline),
+            label: 'Cá nhân',
+          ),
         ],
       ),
     );

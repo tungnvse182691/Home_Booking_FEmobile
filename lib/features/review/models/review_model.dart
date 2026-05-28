@@ -1,52 +1,72 @@
+import '../../../core/constants/api_constants.dart';
+
 class ReviewModel {
-  final String id;
-  final String bookingId;
+  final String reviewId;
+  final String userId;
   final String roomId;
+  final String? roomName;
+  final String? roomThumbnailUrl;
+  final String bookingId;
   final String userName;
-  final String? userAvatar;
-  final double overallRating;
-  final double? cleanlinessRating;
-  final double? locationRating;
-  final double? serviceRating;
-  final double? valueRating;
-  final List<String> quickTags;
+  final String? avatarUrl;
+  final double rating;
+  final double? cleanliness;
+  final double? location;
+  final double? service;
+  final double? value;
+  final List<String>? tags;
   final String? comment;
-  final List<String> images;
   final DateTime createdAt;
 
   ReviewModel({
-    required this.id,
-    required this.bookingId,
+    required this.reviewId,
+    required this.userId,
     required this.roomId,
+    this.roomName,
+    this.roomThumbnailUrl,
+    required this.bookingId,
     required this.userName,
-    this.userAvatar,
-    required this.overallRating,
-    this.cleanlinessRating,
-    this.locationRating,
-    this.serviceRating,
-    this.valueRating,
-    this.quickTags = const [],
+    this.avatarUrl,
+    required this.rating,
+    this.cleanliness,
+    this.location,
+    this.service,
+    this.value,
+    this.tags,
     this.comment,
-    this.images = const [],
     required this.createdAt,
   });
 
   factory ReviewModel.fromJson(Map<String, dynamic> json) {
+    final reviewerJson = json['reviewer'] as Map<String, dynamic>?;
+    List<String>? tags;
+    final rawTags = json['tags'];
+    if (rawTags is List) {
+      tags = rawTags.map((e) => e.toString()).toList();
+    }
     return ReviewModel(
-      id: json['id']?.toString() ?? '',
-      bookingId: json['bookingId']?.toString() ?? '',
+      reviewId: json['reviewId']?.toString() ?? json['id']?.toString() ?? '',
+      userId: reviewerJson?['userId']?.toString() ?? json['userId']?.toString() ?? '',
       roomId: json['roomId']?.toString() ?? '',
-      userName: json['userName'] ?? 'Người dùng',
-      userAvatar: json['userAvatar'],
-      overallRating: (json['overallRating'] as num).toDouble(),
-      cleanlinessRating: (json['cleanlinessRating'] as num?)?.toDouble(),
-      locationRating: (json['locationRating'] as num?)?.toDouble(),
-      serviceRating: (json['serviceRating'] as num?)?.toDouble(),
-      valueRating: (json['valueRating'] as num?)?.toDouble(),
-      quickTags: List<String>.from(json['quickTags'] ?? []),
+      roomName: json['roomName']?.toString(),
+      roomThumbnailUrl: ApiConstants.formatImageUrl(json['roomThumbnailUrl']?.toString()),
+      bookingId: json['bookingId']?.toString() ?? '',
+      userName: reviewerJson?['fullName']?.toString() ??
+          json['userName']?.toString() ??
+          'Người dùng',
+      avatarUrl: ApiConstants.formatImageUrl(
+        reviewerJson?['avatarUrl']?.toString() ?? json['avatarUrl']?.toString(),
+      ),
+      rating: (json['rating'] as num?)?.toDouble() ?? 0.0,
+      cleanliness: (json['cleanliness'] as num?)?.toDouble(),
+      location: (json['location'] as num?)?.toDouble(),
+      service: (json['service'] as num?)?.toDouble(),
+      value: (json['value'] as num?)?.toDouble(),
+      tags: tags,
       comment: json['comment'],
-      images: List<String>.from(json['images'] ?? []),
-      createdAt: DateTime.parse(json['createdAt']),
+      createdAt: json['createdAt'] != null
+          ? DateTime.parse(json['createdAt'])
+          : DateTime.now(),
     );
   }
 }

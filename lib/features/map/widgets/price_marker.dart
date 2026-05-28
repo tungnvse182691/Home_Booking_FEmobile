@@ -16,7 +16,7 @@ class PriceMarker extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Format giá gọn: 950000 -> 950k
-    final String priceText = price >= 1000000 
+    final String priceText = price >= 1000000
         ? '${(price / 1000000).toStringAsFixed(1)}tr'
         : '${(price / 1000).toInt()}k';
 
@@ -28,16 +28,13 @@ class PriceMarker extends StatelessWidget {
         decoration: BoxDecoration(
           color: isSelected ? AppTheme.primary : Colors.white,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: AppTheme.primary,
-            width: 1.5,
-          ),
+          border: Border.all(color: AppTheme.primary, width: 1.5),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.1),
+              color: Colors.black.withValues(alpha: 0.1),
               blurRadius: 4,
               offset: const Offset(0, 2),
-            )
+            ),
           ],
         ),
         child: Center(

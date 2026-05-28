@@ -1,181 +1,407 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../providers/favorite_provider.dart';
-import '../../rooms/providers/room_provider.dart';
-import '../../rooms/widgets/room_card.dart';
-import '../../rooms/widgets/skeleton_room_card.dart';
+import '../../rooms/models/room_model.dart';
 import '../../../utils/app_theme.dart';
 
-class FavoriteScreen extends ConsumerWidget {
+class FavoriteScreen extends ConsumerStatefulWidget {
   const FavoriteScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(favoriteProvider);
-    final favorites = state.favorites;
+  ConsumerState<FavoriteScreen> createState() => _FavoriteScreenState();
+}
 
-    return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
-      appBar: AppBar(
-        title: Text(
-          'Phòng yêu thích ${favorites.isNotEmpty ? "(${favorites.length})" : ""}',
-          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-        ),
-        backgroundColor: Colors.white,
-        foregroundColor: AppTheme.textPrimary,
-        elevation: 0,
-        centerTitle: true,
-      ),
-      body: RefreshIndicator(
-        onRefresh: () => ref.read(favoriteProvider.notifier).fetchFavorites(),
-        child: _buildContent(context, ref, state),
-      ),
-    );
+class _FavoriteScreenState extends ConsumerState<FavoriteScreen> {
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = "";
+
+  @override
+  void initState() {
+    super.initState();
+    _searchController.addListener(_onSearchChanged);
   }
 
-  Widget _buildContent(BuildContext context, WidgetRef ref, FavoriteState state) {
-    if (state.isLoading && state.favorites.isEmpty) {
-      return GridView.builder(
-        padding: const EdgeInsets.all(16),
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          childAspectRatio: 0.6,
-          crossAxisSpacing: 16,
-          mainAxisSpacing: 16,
+  @override
+  void dispose() {
+    _searchController.removeListener(_onSearchChanged);
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _onSearchChanged() {
+    setState(() {
+      _searchQuery = _searchController.text;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final favState = ref.watch(favoriteProvider);
+    final currencyFormat = NumberFormat.currency(
+      locale: 'vi_VN',
+      symbol: 'đ',
+      decimalDigits: 0,
+    );
+
+    // Lọc danh sách phòng yêu thích tại FE theo từ khóa tìm kiếm
+    final query = _searchQuery.toLowerCase().trim();
+    final filteredFavorites = favState.favorites.where((room) {
+      if (query.isEmpty) return true;
+      final nameMatch = room.name.toLowerCase().contains(query);
+      final cityMatch = room.city.toLowerCase().contains(query);
+      return nameMatch || cityMatch;
+    }).toList();
+
+    return Scaffold(
+      backgroundColor: Colors.grey[50],
+      appBar: AppBar(
+        title: const Text(
+          'Yêu thích',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: AppTheme.textPrimary,
+          ),
         ),
-        itemCount: 4,
-        itemBuilder: (context, index) => const SkeletonRoomCard(),
-      );
-    }
-
-    if (state.favorites.isEmpty) {
-      final roomState = ref.watch(roomNotifierProvider);
-      final suggestedRooms = roomState.rooms.take(4).toList();
-
-      return CustomScrollView(
-        slivers: [
-          SliverFillRemaining(
-            hasScrollBody: false,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const SizedBox(height: 60),
-                Icon(Icons.favorite_border, size: 100, color: Colors.grey[300]),
-                const SizedBox(height: 24),
-                const Text(
-                  'Danh sách yêu thích trống',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+        backgroundColor: Colors.white,
+        elevation: 0,
+        centerTitle: false,
+      ),
+      body: Column(
+        children: [
+          // Chỉ hiện thanh tìm kiếm nếu danh sách gốc không rỗng
+          if (favState.favorites.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.03),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  'Lưu lại những chỗ nghỉ mà bạn yêu thích\nđể xem lại sau này.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.grey[600], height: 1.5),
-                ),
-                const SizedBox(height: 32),
-                ElevatedButton(
-                  onPressed: () => context.go('/home'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppTheme.primary,
-                    padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    elevation: 0,
-                  ),
-                  child: const Text('Khám phá ngay', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                ),
-                const SizedBox(height: 60),
-                if (suggestedRooms.isNotEmpty) ...[
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text(
-                          'Gợi ý cho bạn',
-                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                        ),
-                        TextButton(
-                          onPressed: () => context.go('/home'),
-                          child: const Text('Xem thêm', style: TextStyle(color: AppTheme.primary)),
-                        ),
-                      ],
+                child: TextField(
+                  controller: _searchController,
+                  decoration: InputDecoration(
+                    hintText: 'Tìm kiếm theo tên phòng, thành phố...',
+                    hintStyle: TextStyle(color: Colors.grey[400], fontSize: 14),
+                    prefixIcon: const Icon(
+                      Icons.search,
+                      color: AppTheme.primary,
+                    ),
+                    suffixIcon: _searchQuery.isNotEmpty
+                        ? GestureDetector(
+                            onTap: () => _searchController.clear(),
+                            child: const Icon(Icons.clear, color: Colors.grey),
+                          )
+                        : null,
+                    border: InputBorder.none,
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 14,
                     ),
                   ),
-                  const SizedBox(height: 16),
-                ],
-              ],
-            ),
-          ),
-          if (suggestedRooms.isNotEmpty)
-            SliverPadding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              sliver: SliverGrid(
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  childAspectRatio: 0.6,
-                  crossAxisSpacing: 16,
-                  mainAxisSpacing: 16,
-                ),
-                delegate: SliverChildBuilderDelegate(
-                  (context, index) {
-                    final room = suggestedRooms[index];
-                    return RoomCard(
-                      room: room,
-                      isFavorite: false,
-                      onTap: () => context.push('/room-detail/${room.id}'),
-                      onFavoriteToggle: () => ref.read(favoriteProvider.notifier).toggleFavorite(room),
-                    );
-                  },
-                  childCount: suggestedRooms.length,
                 ),
               ),
             ),
-          const SliverToBoxAdapter(child: SizedBox(height: 40)),
+          Expanded(
+            child: RefreshIndicator(
+              onRefresh: () =>
+                  ref.read(favoriteProvider.notifier).fetchFavorites(),
+              child: favState.isLoading && favState.favorites.isEmpty
+                  ? const Center(child: CircularProgressIndicator())
+                  : favState.favorites.isEmpty
+                  ? _buildEmptyState()
+                  : filteredFavorites.isEmpty
+                  ? _buildNoResultsState()
+                  : GridView.builder(
+                      padding: const EdgeInsets.all(16),
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 2,
+                            childAspectRatio:
+                                0.70, // Tỷ lệ thẻ phòng hợp lý cho mobile
+                            crossAxisSpacing: 16,
+                            mainAxisSpacing: 16,
+                          ),
+                      itemCount: filteredFavorites.length,
+                      itemBuilder: (context, index) {
+                        final room = filteredFavorites[index];
+                        return _buildFavoriteCard(
+                          context,
+                          ref,
+                          room,
+                          currencyFormat,
+                        );
+                      },
+                    ),
+            ),
+          ),
         ],
-      );
-    }
-
-    return GridView.builder(
-      padding: const EdgeInsets.all(16),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        childAspectRatio: 0.6, // Điều chỉnh cho phù hợp với RoomCard trong grid
-        crossAxisSpacing: 16,
-        mainAxisSpacing: 16,
       ),
-      itemCount: state.favorites.length,
-      itemBuilder: (context, index) {
-        final room = state.favorites[index];
-        return RoomCard(
-          room: room,
-          isFavorite: true, // Chắc chắn là true vì ở trong màn hình Favorite
-          onTap: () => context.push('/room-detail/${room.id}'),
-          onFavoriteToggle: () => _showRemoveDialog(context, ref, room),
-        );
-      },
     );
   }
 
-  void _showRemoveDialog(BuildContext context, WidgetRef ref, dynamic room) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Xóa khỏi yêu thích?'),
-        content: const Text('Bạn có chắc muốn bỏ phòng này khỏi danh sách yêu thích?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Hủy bỏ', style: TextStyle(color: Colors.grey)),
-          ),
-          TextButton(
-            onPressed: () {
-              ref.read(favoriteProvider.notifier).removeFromFavorite(room.id);
-              Navigator.pop(context);
-            },
-            child: const Text('Xác nhận', style: TextStyle(color: AppTheme.primary, fontWeight: FontWeight.bold)),
+  Widget _buildEmptyState() {
+    return SingleChildScrollView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      child: Container(
+        height: MediaQuery.of(context).size.height * 0.6,
+        alignment: Alignment.center,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: Colors.red.shade50,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.favorite_border,
+                size: 64,
+                color: AppTheme.primary,
+              ),
+            ),
+            const SizedBox(height: 24),
+            const Text(
+              'Danh sách yêu thích trống',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: AppTheme.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Hãy khám phá và lưu lại những homestay\nmà bạn yêu thích nhất nhé.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.grey[500], fontSize: 14),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNoResultsState() {
+    return SingleChildScrollView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      child: Container(
+        height: MediaQuery.of(context).size.height * 0.6,
+        alignment: Alignment.center,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: Colors.grey[100],
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.search_off_rounded,
+                size: 64,
+                color: Colors.grey[400],
+              ),
+            ),
+            const SizedBox(height: 24),
+            const Text(
+              'Không tìm thấy phòng',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: AppTheme.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Không có phòng yêu thích nào phù hợp với từ khóa\n"${_searchQuery}"',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.grey[500], fontSize: 14),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFavoriteCard(
+    BuildContext context,
+    WidgetRef ref,
+    RoomListItem room,
+    NumberFormat currencyFormat,
+  ) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
         ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: InkWell(
+          onTap: () => context.push('/room-detail/${room.roomId}'),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(
+                child: Stack(
+                  children: [
+                    Positioned.fill(
+                      child: room.thumbnailUrl.startsWith('http')
+                          ? CachedNetworkImage(
+                              imageUrl: room.thumbnailUrl,
+                              fit: BoxFit.cover,
+                              placeholder: (context, url) =>
+                                  Container(color: Colors.grey[100]),
+                              errorWidget: (context, url, error) => Container(
+                                color: Colors.grey[100],
+                                child: const Icon(
+                                  Icons.broken_image,
+                                  color: Colors.grey,
+                                ),
+                              ),
+                            )
+                          : Image.file(
+                              File(room.thumbnailUrl),
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) =>
+                                  Container(color: Colors.grey[100]),
+                            ),
+                    ),
+                    Positioned(
+                      top: 8,
+                      right: 8,
+                      child: CircleAvatar(
+                        backgroundColor: Colors.white.withValues(alpha: 0.9),
+                        radius: 16,
+                        child: IconButton(
+                          padding: EdgeInsets.zero,
+                          icon: const Icon(
+                            Icons.favorite,
+                            color: Colors.red,
+                            size: 18,
+                          ),
+                          onPressed: () {
+                            ref
+                                .read(favoriteProvider.notifier)
+                                .removeFavorite(room.roomId);
+                          },
+                        ),
+                      ),
+                    ),
+                    if (room.rating > 0)
+                      Positioned(
+                        bottom: 8,
+                        left: 8,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withValues(alpha: 0.7),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(
+                                Icons.star,
+                                color: Colors.amber,
+                                size: 12,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                room.rating.toStringAsFixed(1),
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(12.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      room.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                        color: AppTheme.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.location_on,
+                          size: 12,
+                          color: Colors.grey,
+                        ),
+                        const SizedBox(width: 2),
+                        Expanded(
+                          child: Text(
+                            room.city,
+                            style: const TextStyle(
+                              color: Colors.grey,
+                              fontSize: 11,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Text(
+                          currencyFormat.format(room.pricePerNight),
+                          style: const TextStyle(
+                            color: AppTheme.primary,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                          ),
+                        ),
+                        const Text(
+                          ' /đêm',
+                          style: TextStyle(color: Colors.grey, fontSize: 10),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
