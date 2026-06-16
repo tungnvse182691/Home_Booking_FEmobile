@@ -28,6 +28,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       if (_focusNode.hasFocus) {
         Future.delayed(const Duration(milliseconds: 250), _scrollToBottom);
       }
+      setState(() {});
     });
   }
 
@@ -113,12 +114,12 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             Container(
               padding: const EdgeInsets.all(6),
               decoration: BoxDecoration(
-                color: const Color(0xFFF3F4F6),
+                color: AppTheme.primary.withOpacity(0.1),
                 shape: BoxShape.circle,
               ),
               child: const Icon(
                 Icons.smart_toy_outlined, // Material Symbols Outlined
-                color: Color(0xFF1F2937),
+                color: AppTheme.primary,
                 size: 20,
               ),
             ),
@@ -181,7 +182,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                         },
                         child: Text(
                           'Xóa',
-                          style: GoogleFonts.dmSans(color: Colors.redAccent, fontWeight: FontWeight.bold),
+                          style: GoogleFonts.dmSans(color: const Color(0xFFE57373), fontWeight: FontWeight.bold),
                         ),
                       ),
                     ],
@@ -219,55 +220,58 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
   Widget _buildWelcomeMessage() {
     return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: const BoxDecoration(
-                color: Color(0xFFF3F4F6),
-                shape: BoxShape.circle,
+      child: SingleChildScrollView(
+        physics: const BouncingScrollPhysics(),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: AppTheme.primary.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.chat_outlined,
+                  color: AppTheme.primary,
+                  size: 32,
+                ),
               ),
-              child: const Icon(
-                Icons.chat_outlined,
-                color: Color(0xFF111827),
-                size: 32,
+              const SizedBox(height: 24),
+              Text(
+                'Xin chào! Tôi có thể giúp gì cho bạn?',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.poppins(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: const Color(0xFF111827),
+                ),
               ),
-            ),
-            const SizedBox(height: 24),
-            Text(
-              'Xin chào! Tôi có thể giúp gì cho bạn?',
-              textAlign: TextAlign.center,
-              style: GoogleFonts.poppins(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: const Color(0xFF111827),
+              const SizedBox(height: 12),
+              Text(
+                'Tôi là Trợ lý Lễ tân AI. Bạn có thể hỏi tôi về các phòng trống ở Đà Nẵng, Hà Nội, TP.HCM, xem các đánh giá của homestay hoặc tư vấn đặt phòng phù hợp.',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.dmSans(
+                  fontSize: 14,
+                  color: const Color(0xFF6B7280),
+                  height: 1.5,
+                ),
               ),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              'Tôi là Trợ lý Lễ tân AI. Bạn có thể hỏi tôi về các phòng trống ở Đà Nẵng, Hà Nội, TP.HCM, xem các đánh giá của homestay hoặc tư vấn đặt phòng phù hợp.',
-              textAlign: TextAlign.center,
-              style: GoogleFonts.dmSans(
-                fontSize: 14,
-                color: const Color(0xFF6B7280),
-                height: 1.5,
+              const SizedBox(height: 24),
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _buildSuggestionChip('Tìm phòng ở Đà Nẵng cho 2 người'),
+                  const SizedBox(height: 10),
+                  _buildSuggestionChip('Homestay nào giá dưới 1 triệu?'),
+                  const SizedBox(height: 10),
+                  _buildSuggestionChip('Cho tôi xem đánh giá của Homestay Biển'),
+                ],
               ),
-            ),
-            const SizedBox(height: 24),
-            Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                _buildSuggestionChip('Tìm phòng ở Đà Nẵng cho 2 người'),
-                const SizedBox(height: 10),
-                _buildSuggestionChip('Homestay nào giá dưới 1 triệu?'),
-                const SizedBox(height: 10),
-                _buildSuggestionChip('Cho tôi xem đánh giá của Homestay Biển'),
-              ],
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -283,8 +287,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
         decoration: BoxDecoration(
-          color: Colors.white,
-          border: Border.all(color: const Color(0xFFE5E7EB)),
+          color: AppTheme.primary.withOpacity(0.04),
+          border: Border.all(color: AppTheme.primary.withOpacity(0.15)),
           borderRadius: BorderRadius.circular(24),
         ),
         child: Text(
@@ -292,8 +296,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           textAlign: TextAlign.center,
           style: GoogleFonts.dmSans(
             fontSize: 13,
-            color: const Color(0xFF1F2937),
-            fontWeight: FontWeight.w500,
+            color: AppTheme.primary,
+            fontWeight: FontWeight.w600,
           ),
         ),
       ),
@@ -497,7 +501,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             ),
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
-              color: isUser ? const Color(0xFF111827) : Colors.white,
+              color: isUser ? AppTheme.primary : Colors.white,
               border: isUser ? null : Border.all(color: const Color(0xFFE5E7EB)),
               borderRadius: BorderRadius.only(
                 topLeft: const Radius.circular(16),
@@ -577,7 +581,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                 ),
                 const SizedBox(width: 8),
                 LoadingAnimationWidget.threeArchedCircle(
-                  color: const Color(0xFF9CA3AF),
+                  color: AppTheme.primary,
                   size: 16,
                 ),
               ],
@@ -618,8 +622,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                 color: const Color(0xFFF9FAFB),
                 borderRadius: BorderRadius.circular(24),
                 border: Border.all(
-                  color: const Color(0xFFE5E7EB),
-                  width: 1.0,
+                  color: _focusNode.hasFocus ? AppTheme.primary : const Color(0xFFE5E7EB),
+                  width: _focusNode.hasFocus ? 1.5 : 1.0,
                 ),
               ),
               child: Row(
@@ -661,7 +665,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             width: 48,
             height: 48,
             decoration: BoxDecoration(
-              color: isTyping ? const Color(0xFF9CA3AF) : const Color(0xFF111827),
+              color: isTyping ? const Color(0xFFE5E7EB) : AppTheme.primary,
               shape: BoxShape.circle,
             ),
             child: IconButton(
