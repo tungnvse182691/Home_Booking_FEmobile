@@ -1,6 +1,7 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../utils/app_theme.dart';
 
 import '../features/auth/screens/login_screen.dart';
 import '../features/auth/screens/register_screen.dart';
@@ -35,6 +36,7 @@ import '../features/profile/screens/change_password_screen.dart';
 
 import '../features/favorite/screens/favorite_screen.dart';
 import '../features/notification/screens/notification_screen.dart';
+import '../features/chat/screens/chat_screen.dart';
 
 // Host
 import '../features/host/screens/host_dashboard_screen.dart';
@@ -49,13 +51,40 @@ import '../features/admin/screens/admin_payments_screen.dart';
 import '../features/admin/screens/admin_reports_screen.dart';
 import '../features/admin/screens/admin_rooms_screen.dart';
 
+class AuthStatus {
+  final bool isLoggedIn;
+  final String? role;
+
+  AuthStatus({required this.isLoggedIn, this.role});
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is AuthStatus &&
+          runtimeType == other.runtimeType &&
+          isLoggedIn == other.isLoggedIn &&
+          role == other.role;
+
+  @override
+  int get hashCode => isLoggedIn.hashCode ^ role.hashCode;
+}
+
+final authStatusProvider = Provider<AuthStatus>((ref) {
+  final auth = ref.watch(authStateProvider);
+  return AuthStatus(
+    isLoggedIn: auth != null,
+    role: auth?.role,
+  );
+});
+
 final appRouterProvider = Provider<GoRouter>((ref) {
-  final authState = ref.watch(authStateProvider);
+  final authStatus = ref.watch(authStatusProvider);
 
   return GoRouter(
     initialLocation: '/home',
     redirect: (context, state) {
-      final isLoggedIn = authState != null;
+      final isLoggedIn = authStatus.isLoggedIn;
+      final role = authStatus.role;
       final isAuthPath =
           state.matchedLocation == '/login' ||
           state.matchedLocation == '/register' ||
@@ -67,12 +96,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
 
       // Logged in
       if (isAuthPath) {
-        if (authState.role == 'HOST') return '/host/dashboard';
-        if (authState.role == 'ADMIN') return '/admin/dashboard';
+        if (role == 'HOST') return '/host/dashboard';
+        if (role == 'ADMIN') return '/admin/dashboard';
         return '/home';
       }
 
-      final role = authState.role;
       final path = state.matchedLocation;
 
       if (path == '/' || path == '/home') {
@@ -156,6 +184,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       // Other Customer Routes (Outside Shell if needed, or keep inside if they should show navbar)
       // Usually details don't show the bottom navbar.
       GoRoute(
+        path: '/chat',
+        builder: (context, state) => const ChatScreen(),
+      ),
+      GoRoute(
         path: '/room-detail/:roomId',
         builder: (context, state) {
           final roomId = state.pathParameters['roomId']!;
@@ -212,7 +244,9 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/edit-room/:roomId',
         builder: (context, state) {
           final roomId = state.pathParameters['roomId']!;
-          return EditRoomScreen(roomId: roomId);
+          final extra = state.extra as Map<String, dynamic>?;
+          final isAdmin = extra?['isAdmin'] as bool? ?? false;
+          return EditRoomScreen(roomId: roomId, isAdmin: isAdmin);
         },
       ),
       GoRoute(
@@ -291,8 +325,8 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             checkOutDate: data['checkOutDate'] is DateTime
                 ? data['checkOutDate'] as DateTime
                 : (data['checkOutDate'] is String
-                    ? DateTime.tryParse(data['checkOutDate'])
-                    : null),
+                      ? DateTime.tryParse(data['checkOutDate'])
+                      : null),
           );
         },
       ),
@@ -330,8 +364,8 @@ class MainScaffold extends StatelessWidget {
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: currentIndex,
         onTap: (index) => context.go(tabs[index].path),
-        selectedItemColor: Colors.blue,
-        unselectedItemColor: Colors.grey,
+        selectedItemColor: AppTheme.primary,
+        unselectedItemColor: AppTheme.textSecondary,
         showUnselectedLabels: true,
         type: BottomNavigationBarType.fixed,
         items: tabs.map((tab) => tab.item).toList(),
@@ -415,4 +449,3 @@ class _TabData {
 
   _TabData({required this.path, required this.item});
 }
-

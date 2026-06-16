@@ -48,6 +48,7 @@ class ApiConstants {
   static const String adminUsers = "/api/admin/users";
   static const String adminPayments = "/api/admin/payments";
   static const String adminRevenue = "/api/admin/reports/revenue";
+  static const String adminRooms = "/api/admin/rooms";
 
   static String? formatImageUrl(String? url) {
     if (url == null || url.trim().isEmpty) return null;
@@ -57,4 +58,3 @@ class ApiConstants {
     return "$baseUrl/$cleanUrl";
   }
 }
-

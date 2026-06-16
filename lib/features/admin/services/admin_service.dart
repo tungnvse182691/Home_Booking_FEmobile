@@ -107,6 +107,11 @@ class AdminService {
         .toList();
   }
 
+  // ── Rooms ─────────────────────────────────────────────────────────────────
+  Future<void> updateRoom(String id, Map<String, dynamic> roomData) async {
+    await _dio.put('${ApiConstants.adminRooms}/$id', data: roomData);
+  }
+
   // ── Revenue ───────────────────────────────────────────────────────────────
   Future<List<RevenueReportItem>> getRevenueReport() async {
     final response = await _dio.get(ApiConstants.adminRevenue);

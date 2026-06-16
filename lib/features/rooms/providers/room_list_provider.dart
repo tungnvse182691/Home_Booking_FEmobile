@@ -1,4 +1,4 @@
-﻿import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/network/dio_client.dart';
 import '../models/room_model.dart';
 import '../services/room_service.dart';
@@ -125,6 +125,7 @@ class RoomListNotifier extends StateNotifier<RoomListState> {
         roomTypeId: _filters.roomTypeId,
         minPrice: _filters.minPrice,
         maxPrice: _filters.maxPrice,
+        amenityIds: _filters.selectedAmenities,
         pageNumber: isRefresh ? 1 : state.pageNumber,
       );
 

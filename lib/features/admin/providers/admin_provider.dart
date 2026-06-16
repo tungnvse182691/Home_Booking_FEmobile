@@ -51,6 +51,11 @@ class AdminUsersNotifier
     extends StateNotifier<AsyncValue<List<AdminUserItem>>> {
   final AdminService _service;
 
+  // Lưu lại filter cuối cùng để re-apply sau khi update
+  String? _lastSearch;
+  String? _lastRole;
+  String? _lastStatus;
+
   AdminUsersNotifier(this._service) : super(const AsyncValue.loading()) {
     fetchUsers();
   }
@@ -60,6 +65,11 @@ class AdminUsersNotifier
     String? role,
     String? status,
   }) async {
+    // Lưu lại filter hiện tại
+    _lastSearch = search;
+    _lastRole = role;
+    _lastStatus = status;
+
     state = const AsyncValue.loading();
     try {
       final users = await _service.getUsers(
@@ -75,12 +85,22 @@ class AdminUsersNotifier
 
   Future<void> updateStatus(String id, String status) async {
     await _service.updateUserStatus(id, status);
-    await fetchUsers();
+    // Re-fetch với filter cũ để danh sách không bị reset filter
+    await fetchUsers(
+      search: _lastSearch,
+      role: _lastRole,
+      status: _lastStatus,
+    );
   }
 
   Future<void> updateRole(String id, String role) async {
     await _service.updateUserRole(id, role);
-    await fetchUsers();
+    // Re-fetch với filter cũ để danh sách không bị reset filter
+    await fetchUsers(
+      search: _lastSearch,
+      role: _lastRole,
+      status: _lastStatus,
+    );
   }
 }
 

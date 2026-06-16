@@ -56,8 +56,9 @@ class AuthStateNotifier extends StateNotifier<UserModel?> {
     String fullName,
     String phone,
     String? avatarUrl,
+    String email,
   ) async {
-    final user = await _authService.updateProfile(fullName, phone, avatarUrl);
+    final user = await _authService.updateProfile(fullName, phone, avatarUrl, email);
     state = user;
     return user;
   }

@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:go_router/go_router.dart';
 import '../providers/admin_provider.dart';
 import '../../rooms/models/room_model.dart';
+import '../../../utils/app_theme.dart';
 
 class AdminRoomsScreen extends ConsumerWidget {
   const AdminRoomsScreen({super.key});
@@ -12,31 +15,92 @@ class AdminRoomsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final roomsAsync = ref.watch(adminRoomsProvider);
-    final currencyFormat = NumberFormat.currency(locale: 'vi_VN', symbol: 'đ', decimalDigits: 0);
+    final currencyFormat = NumberFormat.currency(
+      locale: 'vi_VN',
+      symbol: '₫',
+      decimalDigits: 0,
+    );
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
+      backgroundColor: AppTheme.background,
       appBar: AppBar(
-        title: const Text('Quản lý phòng', style: TextStyle(fontWeight: FontWeight.bold)),
-        elevation: 0,
         backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
+        elevation: 0,
+        surfaceTintColor: Colors.transparent,
+        foregroundColor: AppTheme.textPrimary,
+        title: Text(
+          'Quản lý phòng',
+          style: GoogleFonts.poppins(
+            fontWeight: FontWeight.w700,
+            fontSize: 18,
+            color: AppTheme.textPrimary,
+          ),
+        ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh_rounded, color: AppTheme.textSecondary),
+            onPressed: () => ref.read(adminRoomsProvider.notifier).fetchRooms(),
+          ),
+        ],
       ),
       body: roomsAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, stack) => Center(child: Text('Lỗi: $err', style: const TextStyle(color: Colors.red))),
+        loading: () => const Center(
+          child: CircularProgressIndicator(color: AppTheme.primary),
+        ),
+        error: (err, stack) => Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.error_outline_rounded,
+                    size: 56, color: Colors.redAccent),
+                const SizedBox(height: 12),
+                Text('Không thể tải phòng',
+                    style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
+                const SizedBox(height: 8),
+                Text(err.toString(),
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                        color: AppTheme.textSecondary, fontSize: 13)),
+                const SizedBox(height: 20),
+                ElevatedButton.icon(
+                  onPressed: () =>
+                      ref.read(adminRoomsProvider.notifier).fetchRooms(),
+                  icon: const Icon(Icons.refresh),
+                  label: const Text('Thử lại'),
+                ),
+              ],
+            ),
+          ),
+        ),
         data: (rooms) => RefreshIndicator(
+          color: AppTheme.primary,
           onRefresh: () => ref.read(adminRoomsProvider.notifier).fetchRooms(),
           child: rooms.isEmpty
               ? _buildEmptyState()
-              : ListView.builder(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  padding: const EdgeInsets.all(16),
-                  itemCount: rooms.length,
-                  itemBuilder: (context, index) {
-                    final room = rooms[index];
-                    return _buildRoomCard(context, ref, room, currencyFormat);
-                  },
+              : AnimationLimiter(
+                  child: ListView.builder(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+                    itemCount: rooms.length,
+                    itemBuilder: (context, index) {
+                      return AnimationConfiguration.staggeredList(
+                        position: index,
+                        duration: const Duration(milliseconds: 380),
+                        child: SlideAnimation(
+                          verticalOffset: 40,
+                          child: FadeInAnimation(
+                            child: _RoomCard(
+                              room: rooms[index],
+                              currencyFormat: currencyFormat,
+                              ref: ref,
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
                 ),
         ),
       ),
@@ -48,14 +112,20 @@ class AdminRoomsScreen extends ConsumerWidget {
       physics: const AlwaysScrollableScrollPhysics(),
       children: [
         SizedBox(
-          height: 400,
+          height: 420,
           child: Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.home_work_outlined, size: 80, color: Colors.grey[300]),
+                Icon(Icons.home_outlined, size: 72, color: Colors.grey[300]),
                 const SizedBox(height: 16),
-                const Text('Không có phòng nào trong hệ thống', style: TextStyle(fontSize: 16, color: Colors.grey)),
+                Text(
+                  'Không có phòng nào trong hệ thống',
+                  style: GoogleFonts.dmSans(
+                    fontSize: 15,
+                    color: AppTheme.textSecondary,
+                  ),
+                ),
               ],
             ),
           ),
@@ -63,66 +133,123 @@ class AdminRoomsScreen extends ConsumerWidget {
       ],
     );
   }
+}
 
-  Widget _buildRoomCard(BuildContext context, WidgetRef ref, RoomListItem room, NumberFormat currencyFormat) {
-    return Card(
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: Colors.grey.shade200),
+// ── Room Card ──────────────────────────────────────────────────────────────
+class _RoomCard extends StatelessWidget {
+  final RoomListItem room;
+  final NumberFormat currencyFormat;
+  final WidgetRef ref;
+
+  const _RoomCard({
+    required this.room,
+    required this.currencyFormat,
+    required this.ref,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 12,
+            offset: const Offset(0, 3),
+          ),
+        ],
       ),
-      margin: const EdgeInsets.only(bottom: 16),
       child: Padding(
         padding: const EdgeInsets.all(12),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Thumbnail Image
+            // Thumbnail
             ClipRRect(
               borderRadius: BorderRadius.circular(12),
               child: room.thumbnailUrl.isNotEmpty
                   ? CachedNetworkImage(
                       imageUrl: room.thumbnailUrl,
-                      width: 100,
-                      height: 100,
+                      width: 90,
+                      height: 90,
                       fit: BoxFit.cover,
-                      placeholder: (context, url) => Container(
-                        color: Colors.grey[100],
-                        child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                      placeholder: (_, __) => Container(
+                        width: 90,
+                        height: 90,
+                        color: const Color(0xFFF3F4F6),
+                        child: const Center(
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: AppTheme.primary,
+                          ),
+                        ),
                       ),
-                      errorWidget: (context, url, error) => Container(
-                        color: Colors.grey[100],
-                        child: const Icon(Icons.broken_image, color: Colors.grey),
-                      ),
+                      errorWidget: (_, __, ___) => _imagePlaceholder(),
                     )
-                  : Container(
-                      width: 100,
-                      height: 100,
-                      color: Colors.grey[100],
-                      child: const Icon(Icons.broken_image, color: Colors.grey),
-                    ),
+                  : _imagePlaceholder(),
             ),
             const SizedBox(width: 12),
-            // Room Details
+            // Info
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    room.name,
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.black87),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                  // Name + actions row
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          room.name,
+                          style: GoogleFonts.poppins(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14,
+                            color: AppTheme.textPrimary,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      // Action buttons
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          _ActionButton(
+                            icon: Icons.edit_outlined,
+                            color: AppTheme.primary,
+                            onTap: () => context.push(
+                              '/edit-room/${room.roomId}',
+                              extra: {'isAdmin': true},
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          _ActionButton(
+                            icon: Icons.delete_outline_rounded,
+                            color: Colors.redAccent,
+                            onTap: () =>
+                                _confirmDelete(context, ref, room),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 4),
+                  // Location
                   Row(
                     children: [
-                      const Icon(Icons.location_on, color: Colors.grey, size: 14),
-                      const SizedBox(width: 4),
+                      const Icon(Icons.location_on_outlined,
+                          size: 13, color: AppTheme.textSecondary),
+                      const SizedBox(width: 3),
                       Expanded(
                         child: Text(
                           room.city,
-                          style: const TextStyle(color: Colors.grey, fontSize: 13),
+                          style: GoogleFonts.dmSans(
+                            fontSize: 12,
+                            color: AppTheme.textSecondary,
+                          ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -130,42 +257,41 @@ class AdminRoomsScreen extends ConsumerWidget {
                     ],
                   ),
                   const SizedBox(height: 8),
+                  // Price
                   Text(
-                    '${currencyFormat.format(room.pricePerNight)} / đêm',
-                    style: const TextStyle(color: Colors.blueAccent, fontWeight: FontWeight.bold, fontSize: 15),
+                    '${currencyFormat.format(room.pricePerNight)}/đêm',
+                    style: GoogleFonts.poppins(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 14,
+                      color: AppTheme.primary,
+                    ),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 6),
+                  // Rating
                   Row(
                     children: [
-                      const Icon(Icons.star, color: Colors.amber, size: 16),
-                      const SizedBox(width: 4),
+                      const Icon(Icons.star_rounded,
+                          size: 14, color: Colors.amber),
+                      const SizedBox(width: 3),
                       Text(
                         room.rating.toStringAsFixed(1),
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                        style: GoogleFonts.dmSans(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: AppTheme.textPrimary,
+                        ),
                       ),
-                      const SizedBox(width: 4),
                       Text(
-                        '(${room.reviewCount} đánh giá)',
-                        style: const TextStyle(color: Colors.grey, fontSize: 12),
+                        ' (${room.reviewCount})',
+                        style: GoogleFonts.dmSans(
+                          fontSize: 12,
+                          color: AppTheme.textSecondary,
+                        ),
                       ),
                     ],
                   ),
                 ],
               ),
-            ),
-            // Actions
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.edit_outlined, color: Colors.blueAccent),
-                  onPressed: () => context.push('/edit-room/${room.roomId}'),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
-                  onPressed: () => _confirmDelete(context, ref, room),
-                ),
-              ],
             ),
           ],
         ),
@@ -173,38 +299,105 @@ class AdminRoomsScreen extends ConsumerWidget {
     );
   }
 
-  void _confirmDelete(BuildContext context, WidgetRef ref, RoomListItem room) {
+  Widget _imagePlaceholder() {
+    return Container(
+      width: 90,
+      height: 90,
+      color: const Color(0xFFF3F4F6),
+      child: const Icon(Icons.home_outlined,
+          color: AppTheme.textHint, size: 28),
+    );
+  }
+
+  void _confirmDelete(
+      BuildContext context, WidgetRef ref, RoomListItem room) {
     showDialog(
       context: context,
       builder: (dialogCtx) => AlertDialog(
-        title: const Text('Xác nhận xóa'),
-        content: Text('Bạn có chắc chắn muốn xóa phòng "${room.name}" khỏi hệ thống? Hành động này không thể hoàn tác.'),
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20)),
+        title: Text(
+          'Xác nhận xóa',
+          style: GoogleFonts.poppins(fontWeight: FontWeight.w700),
+        ),
+        content: Text(
+          'Bạn có chắc chắn muốn xóa phòng "${room.name}"? Hành động này không thể hoàn tác.',
+          style: GoogleFonts.dmSans(fontSize: 14),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogCtx),
-            child: const Text('Hủy', style: TextStyle(color: Colors.grey)),
+            child: Text('Hủy',
+                style: GoogleFonts.dmSans(color: AppTheme.textSecondary)),
           ),
-          TextButton(
+          ElevatedButton(
             onPressed: () async {
               Navigator.pop(dialogCtx);
               try {
-                await ref.read(adminRoomsProvider.notifier).deleteRoom(room.roomId);
+                await ref
+                    .read(adminRoomsProvider.notifier)
+                    .deleteRoom(room.roomId);
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Đã xóa phòng thành công')),
+                    const SnackBar(
+                      content: Text('Đã xóa phòng thành công'),
+                      backgroundColor: AppTheme.primary,
+                    ),
                   );
                 }
               } catch (e) {
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Không thể xóa phòng: $e'), backgroundColor: Colors.red),
+                    SnackBar(
+                      content: Text('Không thể xóa phòng: $e'),
+                      backgroundColor: Colors.redAccent,
+                    ),
                   );
                 }
               }
             },
-            child: const Text('Xóa', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.redAccent,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10)),
+            ),
+            child: const Text('Xóa'),
           ),
         ],
+      ),
+    );
+  }
+}
+
+// ── Subtle Action Button ──────────────────────────────────────────────────
+class _ActionButton extends StatelessWidget {
+  final IconData icon;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _ActionButton({
+    required this.icon,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(10),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(10),
+        child: Container(
+          padding: const EdgeInsets.all(7),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF3F4F6),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Icon(icon, size: 16, color: color),
+        ),
       ),
     );
   }

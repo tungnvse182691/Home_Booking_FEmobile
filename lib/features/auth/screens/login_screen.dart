@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../utils/app_theme.dart';
 import '../models/auth_model.dart';
 import '../providers/auth_provider.dart';
 
@@ -13,6 +14,7 @@ class LoginScreen extends ConsumerStatefulWidget {
 
 class _LoginScreenState extends ConsumerState<LoginScreen>
     with SingleTickerProviderStateMixin {
+  final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isPasswordVisible = false;
@@ -48,11 +50,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
   }
 
   Future<void> _handleLogin() async {
-    if (_emailController.text.trim().isEmpty ||
-        _passwordController.text.isEmpty) {
-      _showError('Vui lòng nhập đầy đủ thông tin');
-      return;
-    }
+    if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isLoading = true);
     try {
@@ -110,7 +108,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     final size = MediaQuery.of(context).size;
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppTheme.background,
       body: Stack(
         children: [
           // Background gradient header
@@ -125,8 +123,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                   colors: [
-                    Color(0xFFE53935),
-                    Color(0xFFB71C1C),
+                    AppTheme.primary,
+                    Color(0xFFC86247), // Darker Terracotta shade
                   ],
                 ),
                 borderRadius: BorderRadius.only(
@@ -195,11 +193,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                                 ],
                               ),
                               child: const Center(
-                                child: Icon(
-                                  Icons.home_rounded,
-                                  size: 40,
-                                  color: Color(0xFFE53935),
-                                ),
+                                  child: Icon(
+                                    Icons.home_rounded,
+                                    size: 40,
+                                    color: AppTheme.primary,
+                                  ),
                               ),
                             ),
                             const SizedBox(height: 16),
@@ -228,179 +226,158 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                       const SizedBox(height: 48),
 
                       // Card form
-                      Container(
-                        padding: const EdgeInsets.all(28),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(28),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.08),
-                              blurRadius: 30,
-                              offset: const Offset(0, 8),
-                            ),
-                          ],
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            const Text(
-                              'Chào mừng trở lại! 👋',
-                              style: TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.w700,
-                                color: Color(0xFF212121),
+                      Form(
+                        key: _formKey,
+                        child: Container(
+                          padding: const EdgeInsets.all(28),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(28),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.08),
+                                blurRadius: 30,
+                                offset: const Offset(0, 8),
                               ),
-                            ),
-                            const SizedBox(height: 4),
-                            const Text(
-                              'Đăng nhập để tiếp tục',
-                              style: TextStyle(
-                                fontSize: 13,
-                                color: Color(0xFF9E9E9E),
+                            ],
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              const Text(
+                                'Chào mừng trở lại! 👋',
+                                style: TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.w700,
+                                  color: Color(0xFF212121),
+                                ),
                               ),
-                            ),
-                            const SizedBox(height: 28),
-
-                            // Email / Phone field
-                            _buildInputLabel('Email hoặc Số điện thoại'),
-                            const SizedBox(height: 8),
-                            TextField(
-                              controller: _emailController,
-                              keyboardType: TextInputType.emailAddress,
-                              textInputAction: TextInputAction.next,
-                              decoration: InputDecoration(
-                                hintText: 'Nhập email hoặc số điện thoại',
-                                prefixIcon: const Icon(
-                                  Icons.person_outline_rounded,
+                              const SizedBox(height: 4),
+                              const Text(
+                                'Đăng nhập để tiếp tục',
+                                style: TextStyle(
+                                  fontSize: 13,
                                   color: Color(0xFF9E9E9E),
-                                  size: 20,
-                                ),
-                                filled: true,
-                                fillColor: const Color(0xFFF7F7F7),
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(14),
-                                  borderSide: BorderSide.none,
-                                ),
-                                focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(14),
-                                  borderSide: const BorderSide(
-                                    color: Color(0xFFE53935),
-                                    width: 1.5,
-                                  ),
-                                ),
-                                contentPadding: const EdgeInsets.symmetric(
-                                  horizontal: 16,
-                                  vertical: 16,
                                 ),
                               ),
-                            ),
+                              const SizedBox(height: 28),
 
-                            const SizedBox(height: 20),
-
-                            // Password field
-                            _buildInputLabel('Mật khẩu'),
-                            const SizedBox(height: 8),
-                            TextField(
-                              controller: _passwordController,
-                              obscureText: !_isPasswordVisible,
-                              textInputAction: TextInputAction.done,
-                              onSubmitted: (_) => _handleLogin(),
-                              decoration: InputDecoration(
-                                hintText: 'Nhập mật khẩu',
-                                prefixIcon: const Icon(
-                                  Icons.lock_outline_rounded,
-                                  color: Color(0xFF9E9E9E),
-                                  size: 20,
-                                ),
-                                suffixIcon: GestureDetector(
-                                  onTap: () => setState(
-                                      () => _isPasswordVisible = !_isPasswordVisible),
-                                  child: Icon(
-                                    _isPasswordVisible
-                                        ? Icons.visibility_rounded
-                                        : Icons.visibility_off_rounded,
-                                    color: const Color(0xFF9E9E9E),
+                              // Email / Phone field
+                              _buildInputLabel('Email hoặc Số điện thoại'),
+                              const SizedBox(height: 8),
+                              TextFormField(
+                                controller: _emailController,
+                                keyboardType: TextInputType.emailAddress,
+                                textInputAction: TextInputAction.next,
+                                decoration: const InputDecoration(
+                                  hintText: 'Nhập email hoặc số điện thoại',
+                                  prefixIcon: Icon(
+                                    Icons.person_outline_rounded,
+                                    color: AppTheme.textSecondary,
                                     size: 20,
                                   ),
                                 ),
-                                filled: true,
-                                fillColor: const Color(0xFFF7F7F7),
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(14),
-                                  borderSide: BorderSide.none,
-                                ),
-                                focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(14),
-                                  borderSide: const BorderSide(
-                                    color: Color(0xFFE53935),
-                                    width: 1.5,
+                                validator: (v) {
+                                  if (v == null || v.trim().isEmpty) {
+                                    return 'Vui lòng nhập email hoặc số điện thoại';
+                                  }
+                                  return null;
+                                },
+                              ),
+
+                              const SizedBox(height: 20),
+
+                              // Password field
+                              _buildInputLabel('Mật khẩu'),
+                              const SizedBox(height: 8),
+                              TextFormField(
+                                controller: _passwordController,
+                                obscureText: !_isPasswordVisible,
+                                textInputAction: TextInputAction.done,
+                                onFieldSubmitted: (_) => _handleLogin(),
+                                decoration: InputDecoration(
+                                  hintText: 'Nhập mật khẩu',
+                                  prefixIcon: const Icon(
+                                    Icons.lock_outline_rounded,
+                                    color: AppTheme.textSecondary,
+                                    size: 20,
+                                  ),
+                                  suffixIcon: GestureDetector(
+                                    onTap: () => setState(
+                                        () => _isPasswordVisible = !_isPasswordVisible),
+                                    child: Icon(
+                                      _isPasswordVisible
+                                          ? Icons.visibility_rounded
+                                          : Icons.visibility_off_rounded,
+                                      color: AppTheme.textSecondary,
+                                      size: 20,
+                                    ),
                                   ),
                                 ),
-                                contentPadding: const EdgeInsets.symmetric(
-                                  horizontal: 16,
-                                  vertical: 16,
+                                validator: (v) {
+                                  if (v == null || v.isEmpty) {
+                                    return 'Vui lòng nhập mật khẩu';
+                                  }
+                                  return null;
+                                },
+                              ),
+
+                              // Forgot password
+                              Align(
+                                alignment: Alignment.centerRight,
+                                child: TextButton(
+                                  onPressed: () => context.push('/forgot-password'),
+                                  style: TextButton.styleFrom(
+                                    foregroundColor: AppTheme.primary,
+                                    padding: const EdgeInsets.symmetric(
+                                        vertical: 8, horizontal: 0),
+                                  ),
+                                  child: const Text(
+                                    'Quên mật khẩu?',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 13,
+                                    ),
+                                  ),
                                 ),
                               ),
-                            ),
 
-                            // Forgot password
-                            Align(
-                              alignment: Alignment.centerRight,
-                              child: TextButton(
-                                onPressed: () => context.push('/forgot-password'),
-                                style: TextButton.styleFrom(
-                                  foregroundColor: const Color(0xFFE53935),
-                                  padding: const EdgeInsets.symmetric(
-                                      vertical: 8, horizontal: 0),
-                                ),
-                                child: const Text(
-                                  'Quên mật khẩu?',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 13,
+                              const SizedBox(height: 8),
+
+                              // Login button
+                              SizedBox(
+                                height: 52,
+                                child: ElevatedButton(
+                                  onPressed: _isLoading ? null : _handleLogin,
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: AppTheme.primary,
+                                    disabledBackgroundColor:
+                                        AppTheme.primary.withValues(alpha: 0.6),
+                                    elevation: 0,
+                                    shape: const StadiumBorder(),
                                   ),
-                                ),
-                              ),
-                            ),
-
-                            const SizedBox(height: 8),
-
-                            // Login button
-                            SizedBox(
-                              height: 52,
-                              child: ElevatedButton(
-                                onPressed: _isLoading ? null : _handleLogin,
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: const Color(0xFFE53935),
-                                  disabledBackgroundColor:
-                                      const Color(0xFFE53935).withValues(alpha: 0.6),
-                                  elevation: 0,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(14),
-                                  ),
-                                ),
-                                child: _isLoading
-                                    ? const SizedBox(
-                                        height: 22,
-                                        width: 22,
-                                        child: CircularProgressIndicator(
-                                          color: Colors.white,
-                                          strokeWidth: 2.5,
+                                  child: _isLoading
+                                      ? const SizedBox(
+                                          height: 22,
+                                          width: 22,
+                                          child: CircularProgressIndicator(
+                                            color: Colors.white,
+                                            strokeWidth: 2.5,
+                                          ),
+                                        )
+                                      : const Text(
+                                          'Đăng nhập',
+                                          style: TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.w700,
+                                            color: Colors.white,
+                                            letterSpacing: 0.3,
+                                          ),
                                         ),
-                                      )
-                                    : const Text(
-                                        'Đăng nhập',
-                                        style: TextStyle(
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.w700,
-                                          color: Colors.white,
-                                          letterSpacing: 0.3,
-                                        ),
-                                      ),
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       ),
 
@@ -420,7 +397,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                           TextButton(
                             onPressed: () => context.push('/register'),
                             style: TextButton.styleFrom(
-                              foregroundColor: const Color(0xFFE53935),
+                              foregroundColor: AppTheme.primary,
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 8, vertical: 4),
                             ),

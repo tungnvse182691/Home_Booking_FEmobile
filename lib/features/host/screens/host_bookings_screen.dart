@@ -1,5 +1,7 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../models/host_booking_model.dart';
 import '../providers/host_bookings_provider.dart';
@@ -16,7 +18,6 @@ class _HostBookingsScreenState extends ConsumerState<HostBookingsScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
-  // (label hiển thị, status gửi lên API)
   static const _tabs = [
     ('Chờ duyệt', 'PENDING'),
     ('Đã xác nhận', 'CONFIRMED'),
@@ -53,14 +54,22 @@ class _HostBookingsScreenState extends ConsumerState<HostBookingsScreen>
     );
 
     return Scaffold(
+      backgroundColor: AppTheme.background,
       appBar: AppBar(
-        title: const Text(
+        backgroundColor: AppTheme.background,
+        elevation: 0,
+        surfaceTintColor: Colors.transparent,
+        title: Text(
           'Quản lý đặt phòng',
-          style: TextStyle(fontWeight: FontWeight.bold),
+          style: GoogleFonts.poppins(
+            fontWeight: FontWeight.w700,
+            fontSize: 20,
+            color: AppTheme.textPrimary,
+          ),
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh),
+            icon: const Icon(Icons.refresh_rounded, color: AppTheme.textPrimary),
             tooltip: 'Làm mới',
             onPressed: () => ref
                 .read(hostBookingsProvider.notifier)
@@ -70,6 +79,12 @@ class _HostBookingsScreenState extends ConsumerState<HostBookingsScreen>
         bottom: TabBar(
           controller: _tabController,
           isScrollable: true,
+          labelColor: AppTheme.primary,
+          unselectedLabelColor: AppTheme.textSecondary,
+          indicatorColor: AppTheme.primary,
+          labelStyle: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 14),
+          unselectedLabelStyle: GoogleFonts.dmSans(fontWeight: FontWeight.w500, fontSize: 14),
+          dividerColor: Colors.transparent,
           tabs: _tabs.map((t) => Tab(text: t.$1)).toList(),
         ),
       ),
@@ -77,24 +92,31 @@ class _HostBookingsScreenState extends ConsumerState<HostBookingsScreen>
         controller: _tabController,
         children: _tabs.map((tab) {
           return bookingsAsync.when(
-            loading: () => const Center(child: CircularProgressIndicator()),
+            loading: () => const Center(
+              child: CircularProgressIndicator(color: AppTheme.primary),
+            ),
             error: (e, _) => Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(Icons.error_outline, size: 64, color: Colors.red),
+                  const Icon(Icons.error_outline_rounded, size: 56, color: Color(0xFFE57373)),
                   const SizedBox(height: 12),
                   Text(
-                    'Lỗi: $e',
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(color: Colors.red),
+                    'Có lỗi xảy ra',
+                    style: GoogleFonts.poppins(fontWeight: FontWeight.w600, color: AppTheme.textPrimary),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 8),
+                  Text(
+                    e.toString(),
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.dmSans(color: const Color(0xFFE57373), fontSize: 13),
+                  ),
+                  const SizedBox(height: 20),
                   ElevatedButton.icon(
                     onPressed: () => ref
                         .read(hostBookingsProvider.notifier)
                         .fetchBookings(status: tab.$2),
-                    icon: const Icon(Icons.refresh),
+                    icon: const Icon(Icons.refresh_rounded),
                     label: const Text('Thử lại'),
                   ),
                 ],
@@ -109,28 +131,42 @@ class _HostBookingsScreenState extends ConsumerState<HostBookingsScreen>
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(Icons.inbox_outlined,
-                          size: 72, color: Colors.grey),
+                      const Icon(Icons.inbox_outlined, size: 72, color: AppTheme.textHint),
                       const SizedBox(height: 12),
                       Text(
                         'Không có booking ${tab.$1.toLowerCase()}',
-                        style:
-                            const TextStyle(color: Colors.grey, fontSize: 15),
+                        style: GoogleFonts.poppins(
+                          color: AppTheme.textSecondary,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
                     ],
                   ),
                 );
               }
               return RefreshIndicator(
+                color: AppTheme.primary,
                 onRefresh: () => ref
                     .read(hostBookingsProvider.notifier)
                     .fetchBookings(status: tab.$2),
-                child: ListView.builder(
-                  padding: const EdgeInsets.all(12),
-                  itemCount: filtered.length,
-                  itemBuilder: (ctx, i) => _BookingCard(
-                    booking: filtered[i],
-                    currencyFormat: currencyFormat,
+                child: AnimationLimiter(
+                  child: ListView.builder(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+                    itemCount: filtered.length,
+                    itemBuilder: (ctx, i) => AnimationConfiguration.staggeredList(
+                      position: i,
+                      duration: const Duration(milliseconds: 375),
+                      child: SlideAnimation(
+                        verticalOffset: 30.0,
+                        child: FadeInAnimation(
+                          child: _BookingCard(
+                            booking: filtered[i],
+                            currencyFormat: currencyFormat,
+                          ),
+                        ),
+                      ),
+                    ),
                   ),
                 ),
               );
@@ -142,9 +178,6 @@ class _HostBookingsScreenState extends ConsumerState<HostBookingsScreen>
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Card hiển thị từng booking
-// ─────────────────────────────────────────────────────────────────────────────
 class _BookingCard extends ConsumerWidget {
   final HostBookingItem booking;
   final NumberFormat currencyFormat;
@@ -156,11 +189,21 @@ class _BookingCard extends ConsumerWidget {
     final dateFormat = DateFormat('dd/MM/yyyy');
     final status = booking.status.toUpperCase();
 
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+    return Container(
+      margin: const EdgeInsets.only(bottom: 14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
       child: Padding(
-        padding: const EdgeInsets.all(14),
+        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -170,23 +213,26 @@ class _BookingCard extends ConsumerWidget {
               children: [
                 Text(
                   booking.bookingCode,
-                  style: const TextStyle(
-                      fontWeight: FontWeight.bold, fontSize: 15),
+                  style: GoogleFonts.poppins(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 15,
+                    color: AppTheme.textPrimary,
+                  ),
                 ),
                 _StatusChip(status: status),
               ],
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 10),
 
             // Tên phòng
             Row(
               children: [
-                const Icon(Icons.home_outlined, size: 14, color: Colors.grey),
-                const SizedBox(width: 4),
+                const Icon(Icons.home_outlined, size: 14, color: AppTheme.textSecondary),
+                const SizedBox(width: 6),
                 Expanded(
                   child: Text(
                     booking.roomName,
-                    style: const TextStyle(fontSize: 13, color: Colors.grey),
+                    style: GoogleFonts.dmSans(fontSize: 13, color: AppTheme.textSecondary),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -198,20 +244,19 @@ class _BookingCard extends ConsumerWidget {
             // Thông tin khách
             Row(
               children: [
-                const Icon(Icons.person_outline,
-                    size: 14, color: Colors.grey),
-                const SizedBox(width: 4),
-                Text(booking.customerName,
-                    style: const TextStyle(fontSize: 13)),
+                const Icon(Icons.person_outline_rounded, size: 14, color: AppTheme.textSecondary),
+                const SizedBox(width: 6),
+                Text(
+                  booking.customerName,
+                  style: GoogleFonts.dmSans(fontSize: 13, color: AppTheme.textPrimary, fontWeight: FontWeight.w500),
+                ),
                 if (booking.customerPhone != null) ...[
-                  const SizedBox(width: 8),
-                  const Icon(Icons.phone_outlined,
-                      size: 13, color: Colors.grey),
-                  const SizedBox(width: 2),
+                  const SizedBox(width: 10),
+                  const Icon(Icons.phone_outlined, size: 13, color: AppTheme.textSecondary),
+                  const SizedBox(width: 3),
                   Text(
                     booking.customerPhone!,
-                    style:
-                        const TextStyle(fontSize: 12, color: Colors.grey),
+                    style: GoogleFonts.dmSans(fontSize: 12, color: AppTheme.textSecondary),
                   ),
                 ],
               ],
@@ -221,18 +266,16 @@ class _BookingCard extends ConsumerWidget {
             // Ngày check-in / check-out
             Row(
               children: [
-                const Icon(Icons.calendar_today_outlined,
-                    size: 14, color: Colors.grey),
-                const SizedBox(width: 4),
+                const Icon(Icons.calendar_today_outlined, size: 14, color: AppTheme.textSecondary),
+                const SizedBox(width: 6),
                 Text(
                   '${dateFormat.format(booking.checkInDate)} → ${dateFormat.format(booking.checkOutDate)}',
-                  style: const TextStyle(fontSize: 13),
+                  style: GoogleFonts.dmSans(fontSize: 13, color: AppTheme.textPrimary),
                 ),
                 const SizedBox(width: 6),
                 Text(
                   '(${booking.numberOfNights} đêm)',
-                  style:
-                      const TextStyle(fontSize: 12, color: Colors.grey),
+                  style: GoogleFonts.dmSans(fontSize: 12, color: AppTheme.textSecondary),
                 ),
               ],
             ),
@@ -241,12 +284,11 @@ class _BookingCard extends ConsumerWidget {
             // Tổng tiền
             Row(
               children: [
-                const Icon(Icons.payments_outlined,
-                    size: 14, color: AppTheme.primary),
-                const SizedBox(width: 4),
+                const Icon(Icons.payments_outlined, size: 14, color: AppTheme.primary),
+                const SizedBox(width: 6),
                 Text(
                   currencyFormat.format(booking.totalAmount),
-                  style: const TextStyle(
+                  style: GoogleFonts.poppins(
                     fontWeight: FontWeight.bold,
                     color: AppTheme.primary,
                     fontSize: 14,
@@ -258,64 +300,74 @@ class _BookingCard extends ConsumerWidget {
             // Yêu cầu đặc biệt
             if (booking.specialRequest != null &&
                 booking.specialRequest!.isNotEmpty) ...[
-              const SizedBox(height: 6),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Icon(Icons.notes_outlined,
-                      size: 14, color: Colors.orange),
-                  const SizedBox(width: 4),
-                  Expanded(
-                    child: Text(
-                      booking.specialRequest!,
-                      style: const TextStyle(
-                          fontSize: 12, color: Colors.orange),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
+              const SizedBox(height: 10),
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFB74D).withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Icon(Icons.notes_outlined, size: 14, color: Color(0xFFEF6C00)),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        booking.specialRequest!,
+                        style: GoogleFonts.dmSans(fontSize: 12, color: const Color(0xFFEF6C00)),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ],
 
             // Lý do hủy
             if (booking.cancelReason != null &&
                 booking.cancelReason!.isNotEmpty) ...[
-              const SizedBox(height: 6),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Icon(Icons.cancel_outlined,
-                      size: 14, color: Colors.red),
-                  const SizedBox(width: 4),
-                  Expanded(
-                    child: Text(
-                      'Lý do: ${booking.cancelReason}',
-                      style:
-                          const TextStyle(fontSize: 12, color: Colors.red),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
+              const SizedBox(height: 10),
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE57373).withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Icon(Icons.cancel_outlined, size: 14, color: Color(0xFFD32F2F)),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        'Lý do: ${booking.cancelReason}',
+                        style: GoogleFonts.dmSans(fontSize: 12, color: const Color(0xFFD32F2F)),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ],
 
-            // ── Nút hành động ──────────────────────────────────────────────
-            // PENDING → Từ chối | Xác nhận
+            // Nút hành động
             if (status == 'PENDING') ...[
-              const SizedBox(height: 12),
+              const SizedBox(height: 14),
               Row(
                 children: [
                   Expanded(
                     child: OutlinedButton.icon(
                       onPressed: () => _showRejectDialog(context, ref),
-                      icon: const Icon(Icons.close,
-                          size: 16, color: Colors.red),
-                      label: const Text('Từ chối',
-                          style: TextStyle(color: Colors.red)),
+                      icon: const Icon(Icons.close_rounded, size: 16),
+                      label: const Text('Từ chối'),
                       style: OutlinedButton.styleFrom(
-                        side: const BorderSide(color: Colors.red),
+                        foregroundColor: const Color(0xFFE57373),
+                        side: const BorderSide(color: Color(0xFFE57373)),
+                        shape: const StadiumBorder(),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
                       ),
                     ),
                   ),
@@ -323,11 +375,14 @@ class _BookingCard extends ConsumerWidget {
                   Expanded(
                     child: ElevatedButton.icon(
                       onPressed: () => _confirmAction(context, ref),
-                      icon: const Icon(Icons.check, size: 16),
+                      icon: const Icon(Icons.check_rounded, size: 16),
                       label: const Text('Xác nhận'),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.green,
+                        backgroundColor: AppTheme.success,
                         foregroundColor: Colors.white,
+                        shape: const StadiumBorder(),
+                        elevation: 0,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
                       ),
                     ),
                   ),
@@ -335,18 +390,20 @@ class _BookingCard extends ConsumerWidget {
               ),
             ],
 
-            // CONFIRMED → Đánh dấu hoàn thành (sau khi khách checkout)
             if (status == 'CONFIRMED') ...[
-              const SizedBox(height: 12),
+              const SizedBox(height: 14),
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton.icon(
                   onPressed: () => _completeAction(context, ref),
-                  icon: const Icon(Icons.done_all, size: 16),
+                  icon: const Icon(Icons.done_all_rounded, size: 16),
                   label: const Text('Đánh dấu hoàn thành'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue,
+                    backgroundColor: AppTheme.primary,
                     foregroundColor: Colors.white,
+                    shape: const StadiumBorder(),
+                    elevation: 0,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
                   ),
                 ),
               ),
@@ -357,27 +414,30 @@ class _BookingCard extends ConsumerWidget {
     );
   }
 
-  // ── Xác nhận booking ───────────────────────────────────────────────────────
   Future<void> _confirmAction(BuildContext context, WidgetRef ref) async {
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Xác nhận đặt phòng'),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text('Xác nhận đặt phòng', style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 16)),
         content: Text(
           'Xác nhận booking ${booking.bookingCode} của khách ${booking.customerName}?',
+          style: GoogleFonts.dmSans(color: AppTheme.textSecondary),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Hủy'),
+            child: Text('Hủy', style: GoogleFonts.dmSans(color: AppTheme.textSecondary, fontWeight: FontWeight.bold)),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.green,
+              backgroundColor: AppTheme.success,
               foregroundColor: Colors.white,
+              shape: const StadiumBorder(),
+              elevation: 0,
             ),
-            child: const Text('Xác nhận'),
+            child: Text('Xác nhận', style: GoogleFonts.dmSans(fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -393,31 +453,33 @@ class _BookingCard extends ConsumerWidget {
                 ? 'Đã xác nhận booking ${booking.bookingCode}'
                 : 'Có lỗi xảy ra, vui lòng thử lại',
           ),
-          backgroundColor: success ? Colors.green : Colors.red,
+          backgroundColor: success ? AppTheme.success : const Color(0xFFE57373),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ));
       }
     }
   }
 
-  // ── Từ chối booking ────────────────────────────────────────────────────────
   Future<void> _showRejectDialog(BuildContext context, WidgetRef ref) async {
     final reasonController = TextEditingController();
     final result = await showDialog<String?>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Từ chối đặt phòng'),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text('Từ chối đặt phòng', style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 16)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
               'Từ chối booking ${booking.bookingCode} của khách ${booking.customerName}?',
+              style: GoogleFonts.dmSans(color: AppTheme.textSecondary),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 16),
             TextField(
               controller: reasonController,
               decoration: const InputDecoration(
                 labelText: 'Lý do từ chối (tùy chọn)',
-                border: OutlineInputBorder(),
               ),
               maxLines: 2,
             ),
@@ -426,16 +488,18 @@ class _BookingCard extends ConsumerWidget {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Hủy'),
+            child: Text('Hủy', style: GoogleFonts.dmSans(color: AppTheme.textSecondary, fontWeight: FontWeight.bold)),
           ),
           ElevatedButton(
             onPressed: () =>
                 Navigator.pop(ctx, reasonController.text.trim()),
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
+              backgroundColor: const Color(0xFFE57373),
               foregroundColor: Colors.white,
+              shape: const StadiumBorder(),
+              elevation: 0,
             ),
-            child: const Text('Từ chối'),
+            child: Text('Từ chối', style: GoogleFonts.dmSans(fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -454,34 +518,39 @@ class _BookingCard extends ConsumerWidget {
                 ? 'Đã từ chối booking ${booking.bookingCode}'
                 : 'Có lỗi xảy ra, vui lòng thử lại',
           ),
-          backgroundColor: success ? Colors.orange : Colors.red,
+          backgroundColor: success ? const Color(0xFFFFB74D) : const Color(0xFFE57373),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ));
       }
     }
   }
 
-  // ── Đánh dấu hoàn thành ───────────────────────────────────────────────────
   Future<void> _completeAction(BuildContext context, WidgetRef ref) async {
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Hoàn thành đặt phòng'),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text('Hoàn thành đặt phòng', style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 16)),
         content: Text(
           'Đánh dấu booking ${booking.bookingCode} là đã hoàn thành?\n\n'
           'Khách sẽ có thể viết đánh giá sau khi hoàn thành.',
+          style: GoogleFonts.dmSans(color: AppTheme.textSecondary),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Hủy'),
+            child: Text('Hủy', style: GoogleFonts.dmSans(color: AppTheme.textSecondary, fontWeight: FontWeight.bold)),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.blue,
+              backgroundColor: AppTheme.primary,
               foregroundColor: Colors.white,
+              shape: const StadiumBorder(),
+              elevation: 0,
             ),
-            child: const Text('Hoàn thành'),
+            child: Text('Hoàn thành', style: GoogleFonts.dmSans(fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -497,16 +566,15 @@ class _BookingCard extends ConsumerWidget {
                 ? 'Đã hoàn thành booking ${booking.bookingCode}'
                 : 'Có lỗi xảy ra, vui lòng thử lại',
           ),
-          backgroundColor: success ? Colors.blue : Colors.red,
+          backgroundColor: success ? AppTheme.primary : const Color(0xFFE57373),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ));
       }
     }
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Chip trạng thái
-// ─────────────────────────────────────────────────────────────────────────────
 class _StatusChip extends StatelessWidget {
   final String status;
   const _StatusChip({required this.status});
@@ -519,38 +587,37 @@ class _StatusChip extends StatelessWidget {
 
     switch (status) {
       case 'PENDING':
-        bg = Colors.orange.withValues(alpha: 0.15);
-        fg = Colors.orange;
+        bg = const Color(0xFFFFB74D).withValues(alpha: 0.15);
+        fg = const Color(0xFFFFB74D);
         label = 'Chờ duyệt';
         break;
       case 'CONFIRMED':
-        bg = Colors.green.withValues(alpha: 0.12);
-        fg = Colors.green;
+        bg = AppTheme.primary.withValues(alpha: 0.1);
+        fg = AppTheme.primary;
         label = 'Đã xác nhận';
         break;
       case 'COMPLETED':
-        bg = Colors.blue.withValues(alpha: 0.12);
-        fg = Colors.blue;
+        bg = AppTheme.success.withValues(alpha: 0.12);
+        fg = AppTheme.success;
         label = 'Hoàn thành';
         break;
       case 'CANCELED':
-        bg = Colors.red.withValues(alpha: 0.1);
-        fg = Colors.red;
+        bg = const Color(0xFFE57373).withValues(alpha: 0.1);
+        fg = const Color(0xFFE57373);
         label = 'Đã hủy';
         break;
       default:
-        bg = Colors.grey.withValues(alpha: 0.12);
-        fg = Colors.grey;
+        bg = AppTheme.textSecondary.withValues(alpha: 0.12);
+        fg = AppTheme.textSecondary;
         label = status;
     }
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration:
-          BoxDecoration(color: bg, borderRadius: BorderRadius.circular(999)),
+      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(999)),
       child: Text(
         label,
-        style: TextStyle(
+        style: GoogleFonts.dmSans(
           fontSize: 11,
           color: fg,
           fontWeight: FontWeight.w600,

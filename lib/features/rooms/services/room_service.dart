@@ -25,6 +25,7 @@ class RoomService {
     String? roomTypeId,
     double? minPrice,
     double? maxPrice,
+    List<String>? amenityIds,
     int pageNumber = 1,
     int pageSize = 10,
   }) async {
@@ -37,6 +38,7 @@ class RoomService {
           if (roomTypeId != null && roomTypeId.isNotEmpty) 'roomTypeId': roomTypeId,
           if (minPrice != null) 'min_price': minPrice,
           if (maxPrice != null) 'max_price': maxPrice,
+          if (amenityIds != null && amenityIds.isNotEmpty) 'amenity_ids': amenityIds.join(','),
           'page': pageNumber,
           'limit': pageSize,
         },

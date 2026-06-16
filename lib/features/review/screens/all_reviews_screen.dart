@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../widgets/review_card.dart';
 import '../widgets/rating_summary.dart';
 import '../providers/review_provider.dart';
@@ -31,7 +33,13 @@ class _AllReviewsScreenState extends ConsumerState<AllReviewsScreen> {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        title: Text('${state.reviews.length} đánh giá', style: const TextStyle(color: AppTheme.textPrimary)),
+        title: Text(
+          '${state.reviews.length} đánh giá',
+          style: GoogleFonts.poppins(
+            color: AppTheme.textPrimary,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         backgroundColor: Colors.white,
         elevation: 0,
         leading: const BackButton(color: AppTheme.textPrimary),
@@ -56,9 +64,14 @@ class _AllReviewsScreenState extends ConsumerState<AllReviewsScreen> {
                       label: Text(filter),
                       selected: isSelected,
                       onSelected: (v) => setState(() => _selectedFilter = filter),
-                      selectedColor: AppTheme.textPrimary,
-                      labelStyle: TextStyle(color: isSelected ? Colors.white : Colors.black),
-                      backgroundColor: Colors.grey[100],
+                      selectedColor: AppTheme.primary,
+                      showCheckmark: false,
+                      labelStyle: GoogleFonts.dmSans(
+                        color: isSelected ? Colors.white : AppTheme.textPrimary,
+                        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                      ),
+                      backgroundColor: const Color(0xFFF3F4F6),
+                      shape: const StadiumBorder(side: BorderSide.none),
                     ),
                   );
                 },
@@ -68,18 +81,32 @@ class _AllReviewsScreenState extends ConsumerState<AllReviewsScreen> {
             Expanded(
               child: state.isLoading 
                 ? const Center(child: CircularProgressIndicator())
-                : ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    itemCount: state.reviews.length + 1,
-                    itemBuilder: (context, index) {
-                      if (index == 0) {
-                        return Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 24.0),
-                          child: RatingSummary(rating: 4.8, totalReviews: state.reviews.length),
+                : AnimationLimiter(
+                    child: ListView.builder(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      itemCount: state.reviews.length + 1,
+                      itemBuilder: (context, index) {
+                        return AnimationConfiguration.staggeredList(
+                          position: index,
+                          duration: const Duration(milliseconds: 375),
+                          child: SlideAnimation(
+                            verticalOffset: 50.0,
+                            child: FadeInAnimation(
+                              child: index == 0
+                                  ? Padding(
+                                      padding: const EdgeInsets.symmetric(vertical: 24.0),
+                                      child: RatingSummary(
+                                        rating: 4.8,
+                                        totalReviews: state.reviews.length,
+                                      ),
+                                    )
+                                  : ReviewCard(review: state.reviews[index - 1]),
+                            ),
+                          ),
                         );
-                      }
-                      return ReviewCard(review: state.reviews[index - 1]);
-                    },
+                      },
+                    ),
                   ),
             ),
           ],

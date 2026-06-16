@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../../utils/app_theme.dart';
 
 class AmenityGrid extends StatelessWidget {
@@ -8,34 +9,41 @@ class AmenityGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        mainAxisExtent: 40,
-        crossAxisSpacing: 10,
-        mainAxisSpacing: 10,
-      ),
-      itemCount: amenities.length,
-      itemBuilder: (context, index) {
-        final a = amenities[index];
-        IconData icon = Icons.check_circle_outline;
-        if (a == 'Wifi') icon = Icons.wifi;
-        if (a == 'Bếp') icon = Icons.kitchen;
-        if (a == 'Điều hòa') icon = Icons.ac_unit;
-        if (a == 'Bể bơi') icon = Icons.pool;
-        if (a == 'Máy giặt') icon = Icons.local_laundry_service;
-        if (a == 'Tivi') icon = Icons.tv;
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: amenities.map((a) {
+        IconData icon = Icons.check_circle_outline_rounded;
+        if (a == 'Wifi') icon = Icons.wifi_rounded;
+        if (a == 'Bếp') icon = Icons.kitchen_rounded;
+        if (a == 'Điều hòa') icon = Icons.ac_unit_rounded;
+        if (a == 'Bể bơi') icon = Icons.pool_rounded;
+        if (a == 'Máy giặt') icon = Icons.local_laundry_service_rounded;
+        if (a == 'Tivi') icon = Icons.tv_rounded;
 
-        return Row(
-          children: [
-            Icon(icon, size: 20, color: AppTheme.textSecondary),
-            const SizedBox(width: 10),
-            Text(a, style: const TextStyle(fontSize: 14)),
-          ],
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          decoration: BoxDecoration(
+            color: AppTheme.textSecondary.withValues(alpha: 0.05),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 18, color: AppTheme.primary),
+              const SizedBox(width: 8),
+              Text(
+                a,
+                style: GoogleFonts.dmSans(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                  color: AppTheme.textPrimary,
+                ),
+              ),
+            ],
+          ),
         );
-      },
+      }).toList(),
     );
   }
 }

@@ -49,6 +49,7 @@ void main() {
     final revenueState = await container.read(adminRevenueProvider.future);
     print('Revenue items count: ${revenueState.length}');
 
+    usersSubscription.close();
     container.dispose();
   });
 }

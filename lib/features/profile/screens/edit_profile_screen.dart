@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -131,17 +131,24 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                     ),
                     const SizedBox(height: 16),
 
-                    // Email (read-only)
+                    // Email
                     TextFormField(
                       controller: _emailController,
-                      readOnly: true,
-                      decoration: InputDecoration(
+                      keyboardType: TextInputType.emailAddress,
+                      decoration: const InputDecoration(
                         labelText: 'Email',
-                        prefixIcon: const Icon(Icons.email_outlined),
-                        fillColor: Colors.grey[100],
-                        filled: true,
-                        helperText: 'Email không thể thay đổi',
+                        prefixIcon: Icon(Icons.email_outlined),
                       ),
+                      validator: (v) {
+                        if (v == null || v.trim().isEmpty) {
+                          return 'Vui lòng nhập email';
+                        }
+                        final emailRegex = RegExp(r'^[^@]+@[^@]+\.[^@]+$');
+                        if (!emailRegex.hasMatch(v.trim())) {
+                          return 'Email không hợp lệ';
+                        }
+                        return null;
+                      },
                     ),
                     const SizedBox(height: 16),
 
@@ -260,6 +267,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
           _nameController.text.trim(),
           _phoneController.text.trim(),
           avatarUrl,
+          _emailController.text.trim(),
         );
 
     if (!mounted) return;

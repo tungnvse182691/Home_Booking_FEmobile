@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../models/review_model.dart';
 import '../providers/review_provider.dart';
 import '../screens/edit_review_screen.dart';
@@ -68,7 +70,13 @@ class _MyReviewsScreenState extends ConsumerState<MyReviewsScreen> {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text('Đánh giá của tôi', style: TextStyle(color: AppTheme.textPrimary)),
+        title: Text(
+          'Đánh giá của tôi',
+          style: GoogleFonts.poppins(
+            color: AppTheme.textPrimary,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         backgroundColor: Colors.white,
         elevation: 0,
         leading: const BackButton(color: AppTheme.textPrimary),
@@ -78,28 +86,69 @@ class _MyReviewsScreenState extends ConsumerState<MyReviewsScreen> {
         child: state.isLoading
             ? const Center(child: CircularProgressIndicator())
             : state.reviews.isEmpty
-                ? const Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.rate_review_outlined, size: 80, color: Colors.grey),
-                        SizedBox(height: 16),
-                        Text('Bạn chưa có đánh giá nào', style: TextStyle(color: Colors.grey, fontSize: 16)),
-                      ],
+                ? SingleChildScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    child: SizedBox(
+                      height: MediaQuery.of(context).size.height * 0.75,
+                      child: Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(
+                              Icons.rate_review_outlined,
+                              size: 88,
+                              color: AppTheme.textHint,
+                            ),
+                            const SizedBox(height: 24),
+                            Text(
+                              'Bạn chưa có đánh giá nào',
+                              style: GoogleFonts.poppins(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: AppTheme.textPrimary,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Các đánh giá của bạn về các homestay đã lưu trú\nsẽ xuất hiện ở đây.',
+                              textAlign: TextAlign.center,
+                              style: GoogleFonts.dmSans(
+                                color: AppTheme.textSecondary,
+                                fontSize: 14,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
                   )
-                : ListView.separated(
-                    padding: const EdgeInsets.all(16),
-                    itemCount: state.reviews.length,
-                    separatorBuilder: (_, __) => const Divider(height: 1),
-                    itemBuilder: (context, index) {
-                      final review = state.reviews[index];
-                      return _MyReviewCard(
-                        review: review,
-                        onEdit: () => _openEdit(context, review),
-                        onDelete: () => _confirmDelete(context, review),
-                      );
-                    },
+                : AnimationLimiter(
+                    child: ListView.separated(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: const EdgeInsets.all(16),
+                      itemCount: state.reviews.length,
+                      separatorBuilder: (_, __) => const Divider(
+                        height: 1,
+                        color: Color(0xFFF3F4F6),
+                      ),
+                      itemBuilder: (context, index) {
+                        final review = state.reviews[index];
+                        return AnimationConfiguration.staggeredList(
+                          position: index,
+                          duration: const Duration(milliseconds: 375),
+                          child: SlideAnimation(
+                            verticalOffset: 50.0,
+                            child: FadeInAnimation(
+                              child: _MyReviewCard(
+                                review: review,
+                                onEdit: () => _openEdit(context, review),
+                                onDelete: () => _confirmDelete(context, review),
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
                   ),
       ),
     );
@@ -143,7 +192,7 @@ class _MyReviewCard extends StatelessWidget {
                               width: 52,
                               height: 52,
                               color: Colors.grey[200],
-                              child: const Icon(Icons.home, color: Colors.grey, size: 24),
+                              child: const Icon(Icons.home_outlined, color: Colors.grey, size: 24),
                             ),
                           )
                         : Container(
@@ -153,7 +202,7 @@ class _MyReviewCard extends StatelessWidget {
                               color: Colors.grey[200],
                               borderRadius: BorderRadius.circular(8),
                             ),
-                            child: const Icon(Icons.home, color: Colors.grey, size: 24),
+                            child: const Icon(Icons.home_outlined, color: Colors.grey, size: 24),
                           ),
                   ),
                   const SizedBox(width: 12),
@@ -163,14 +212,21 @@ class _MyReviewCard extends StatelessWidget {
                       children: [
                         Text(
                           review.roomName!,
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                          style: GoogleFonts.poppins(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 15,
+                            color: AppTheme.textPrimary,
+                          ),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                         ),
                         const SizedBox(height: 2),
                         Text(
                           'Đã đánh giá ngày ${DateFormat('dd/MM/yyyy').format(review.createdAt)}',
-                          style: const TextStyle(color: Colors.grey, fontSize: 12),
+                          style: GoogleFonts.dmSans(
+                            color: AppTheme.textSecondary,
+                            fontSize: 12,
+                          ),
                         ),
                       ],
                     ),
@@ -183,9 +239,9 @@ class _MyReviewCard extends StatelessWidget {
                     padding: EdgeInsets.zero,
                     constraints: const BoxConstraints(),
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: 12),
                   IconButton(
-                    icon: const Icon(Icons.delete_outline, size: 20, color: Colors.red),
+                    icon: const Icon(Icons.delete_outline, size: 20, color: Colors.redAccent),
                     tooltip: 'Xóa đánh giá',
                     onPressed: onDelete,
                     padding: EdgeInsets.zero,
@@ -208,7 +264,7 @@ class _MyReviewCard extends StatelessWidget {
                 const SizedBox(width: 8),
                 Text(
                   DateFormat('dd/MM/yyyy').format(review.createdAt),
-                  style: const TextStyle(color: Colors.grey, fontSize: 12),
+                  style: GoogleFonts.dmSans(color: AppTheme.textSecondary, fontSize: 12),
                 ),
                 const Spacer(),
                 IconButton(
@@ -217,9 +273,9 @@ class _MyReviewCard extends StatelessWidget {
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(),
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: 12),
                 IconButton(
-                  icon: const Icon(Icons.delete_outline, size: 20, color: Colors.red),
+                  icon: const Icon(Icons.delete_outline, size: 20, color: Colors.redAccent),
                   onPressed: onDelete,
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(),
@@ -239,7 +295,11 @@ class _MyReviewCard extends StatelessWidget {
                 const SizedBox(width: 8),
                 Text(
                   _ratingLabel(review.rating),
-                  style: const TextStyle(color: AppTheme.primary, fontSize: 13, fontWeight: FontWeight.w600),
+                  style: GoogleFonts.dmSans(
+                    color: AppTheme.primary,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ],
             ),
@@ -248,7 +308,14 @@ class _MyReviewCard extends StatelessWidget {
 
           // Comment
           if (review.comment != null && review.comment!.isNotEmpty)
-            Text(review.comment!, style: const TextStyle(height: 1.5, color: Colors.black87)),
+            Text(
+              review.comment!,
+              style: GoogleFonts.dmSans(
+                height: 1.5,
+                color: AppTheme.textPrimary,
+                fontSize: 14,
+              ),
+            ),
 
           // Tags
           if (review.tags != null && review.tags!.isNotEmpty) ...[
@@ -262,7 +329,14 @@ class _MyReviewCard extends StatelessWidget {
                   color: AppTheme.primary.withValues(alpha: 0.08),
                   borderRadius: BorderRadius.circular(999),
                 ),
-                child: Text(tag, style: const TextStyle(fontSize: 12, color: AppTheme.primary)),
+                child: Text(
+                  tag,
+                  style: GoogleFonts.dmSans(
+                    fontSize: 12,
+                    color: AppTheme.primary,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
               )).toList(),
             ),
           ],
@@ -298,10 +372,19 @@ class _SubRatingRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 2),
+      padding: const EdgeInsets.only(bottom: 4),
       child: Row(
         children: [
-          SizedBox(width: 60, child: Text(label, style: const TextStyle(fontSize: 12, color: Colors.grey))),
+          SizedBox(
+            width: 60,
+            child: Text(
+              label,
+              style: GoogleFonts.dmSans(
+                fontSize: 12,
+                color: AppTheme.textSecondary,
+              ),
+            ),
+          ),
           const SizedBox(width: 8),
           Row(
             children: List.generate(5, (i) => Icon(

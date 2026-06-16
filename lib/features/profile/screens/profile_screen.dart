@@ -1,10 +1,11 @@
-﻿import 'dart:io';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../auth/providers/auth_provider.dart';
+import '../../../utils/app_theme.dart';
 import '../providers/profile_provider.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
@@ -36,8 +37,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     if (user == null) return;
     if (_controllersSynced &&
         _nameController.text == user.fullName &&
-        _phoneController.text == (user.phone) &&
-        _avatarController.text == (user.avatarUrl ?? '')) {
+        _phoneController.text == user.phone &&
+        _avatarController.text == (user.avatarUrl ?? '') &&
+        _emailController.text == user.email) {
       return;
     }
 
@@ -55,14 +57,32 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           _nameController.text.trim(),
           _phoneController.text.trim(),
           _avatarController.text.trim().isEmpty ? null : _avatarController.text.trim(),
+          _emailController.text.trim(),
         );
 
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(success ? 'Cập nhật thành công' : 'Cập nhật thất bại'),
-      ),
-    );
+
+    final state = ref.read(profileProvider);
+    if (success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Cập nhật thành công'),
+          backgroundColor: AppTheme.success,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
+      );
+    } else {
+      final errorMsg = state.error ?? 'Cập nhật thất bại';
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(errorMsg),
+          backgroundColor: AppTheme.primary,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
+      );
+    }
   }
 
   Future<void> _handleLogout() async {
@@ -107,13 +127,15 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 Center(
                   child: CircleAvatar(
                     radius: 48,
+                    backgroundColor: AppTheme.primary,
+                    foregroundColor: Colors.white,
                     backgroundImage: _avatarController.text.isNotEmpty
                         ? (_avatarController.text.startsWith('http')
                             ? NetworkImage(_avatarController.text)
                             : FileImage(File(_avatarController.text)) as ImageProvider)
                         : null,
                     child: _avatarController.text.isEmpty
-                        ? const Icon(Icons.person, size: 48)
+                        ? const Icon(Icons.person, size: 48, color: Colors.white)
                         : null,
                   ),
                 ),
@@ -122,7 +144,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   controller: _nameController,
                   decoration: const InputDecoration(
                     labelText: 'Họ và tên',
-                    border: OutlineInputBorder(),
                   ),
                   validator: (value) => value == null || value.trim().isEmpty
                       ? 'Vui lòng nhập họ tên'
@@ -131,11 +152,20 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 const SizedBox(height: 16),
                 TextFormField(
                   controller: _emailController,
-                  readOnly: true,
+                  keyboardType: TextInputType.emailAddress,
                   decoration: const InputDecoration(
                     labelText: 'Email',
-                    border: OutlineInputBorder(),
                   ),
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Vui lòng nhập email';
+                    }
+                    final emailRegex = RegExp(r'^[^@]+@[^@]+\.[^@]+$');
+                    if (!emailRegex.hasMatch(value.trim())) {
+                      return 'Email không hợp lệ';
+                    }
+                    return null;
+                  },
                 ),
                 const SizedBox(height: 16),
                 TextFormField(
@@ -143,7 +173,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   keyboardType: TextInputType.phone,
                   decoration: const InputDecoration(
                     labelText: 'Số điện thoại',
-                    border: OutlineInputBorder(),
                   ),
                   validator: (value) => value == null || value.trim().isEmpty
                       ? 'Vui lòng nhập số điện thoại'
@@ -154,14 +183,13 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   controller: _avatarController,
                   decoration: const InputDecoration(
                     labelText: 'Avatar URL',
-                    border: OutlineInputBorder(),
                   ),
                 ),
                 if (state.error != null) ...[
                   const SizedBox(height: 12),
                   Text(
                     state.error!.replaceFirst('Exception: ', ''),
-                    style: const TextStyle(color: Colors.red),
+                    style: const TextStyle(color: Color(0xFFE57373)), // Soft red
                   ),
                 ],
                 const SizedBox(height: 24),
@@ -194,7 +222,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   onPressed: _handleLogout,
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 16),
-                    foregroundColor: Colors.red,
+                    foregroundColor: const Color(0xFFE57373), // Soft red
                   ),
                   child: const Text('Đăng xuất'),
                 ),

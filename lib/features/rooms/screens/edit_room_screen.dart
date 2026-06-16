@@ -12,8 +12,9 @@ import '../widgets/step_indicator.dart';
 
 class EditRoomScreen extends ConsumerStatefulWidget {
   final String roomId;
+  final bool isAdmin;
 
-  const EditRoomScreen({super.key, required this.roomId});
+  const EditRoomScreen({super.key, required this.roomId, this.isAdmin = false});
 
   @override
   ConsumerState<EditRoomScreen> createState() => _EditRoomScreenState();
@@ -36,9 +37,6 @@ class _EditRoomScreenState extends ConsumerState<EditRoomScreen> {
   late final TextEditingController _districtController;
   late final TextEditingController _wardController;
   late final TextEditingController _areaController;
-  late final TextEditingController _latController;
-  late final TextEditingController _lngController;
-
   bool _prefilled = false;
 
   @override
@@ -55,8 +53,6 @@ class _EditRoomScreenState extends ConsumerState<EditRoomScreen> {
     _districtController = TextEditingController();
     _wardController = TextEditingController();
     _areaController = TextEditingController();
-    _latController = TextEditingController(text: '10.7769');
-    _lngController = TextEditingController(text: '106.7009');
 
     // Reset createRoomProvider state khi mở màn hình edit
     Future.microtask(() {
@@ -79,8 +75,6 @@ class _EditRoomScreenState extends ConsumerState<EditRoomScreen> {
     _districtController.dispose();
     _wardController.dispose();
     _areaController.dispose();
-    _latController.dispose();
-    _lngController.dispose();
     super.dispose();
   }
 
@@ -105,12 +99,11 @@ class _EditRoomScreenState extends ConsumerState<EditRoomScreen> {
       _districtController.text = room.district ?? '';
       _wardController.text = room.ward ?? '';
       _areaController.text = room.areaName ?? '';
-      _latController.text = room.lat.toString();
-      _lngController.text = room.lng.toString();
 
       // Fill provider state
       final notifier = ref.read(createRoomProvider.notifier);
       notifier.setRoomId(widget.roomId);
+      notifier.setIsAdmin(widget.isAdmin);
       notifier.updateField(
         name: room.name,
         description: room.description,
@@ -367,41 +360,6 @@ class _EditRoomScreenState extends ConsumerState<EditRoomScreen> {
             border: OutlineInputBorder(),
           ),
         ),
-        const SizedBox(height: 16),
-        const Text(
-          'Tọa độ (tùy chọn)',
-          style: TextStyle(fontSize: 14, color: Colors.grey),
-        ),
-        const SizedBox(height: 8),
-        Row(
-          children: [
-            Expanded(
-              child: TextFormField(
-                controller: _latController,
-                keyboardType: const TextInputType.numberWithOptions(
-                  decimal: true,
-                ),
-                decoration: const InputDecoration(
-                  labelText: 'Vĩ độ (Lat)',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: TextFormField(
-                controller: _lngController,
-                keyboardType: const TextInputType.numberWithOptions(
-                  decimal: true,
-                ),
-                decoration: const InputDecoration(
-                  labelText: 'Kinh độ (Lng)',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-            ),
-          ],
-        ),
       ],
     );
   }
@@ -569,9 +527,7 @@ class _EditRoomScreenState extends ConsumerState<EditRoomScreen> {
         areaName: _areaController.text.trim(),
       );
       notifier.setAddress(address);
-      final lat = double.tryParse(_latController.text.trim()) ?? 10.7769;
-      final lng = double.tryParse(_lngController.text.trim()) ?? 106.7009;
-      notifier.setLocation(lat, lng);
+      notifier.setLocation(10.7769, 106.7009);
       notifier.setStep(3);
       return;
     }

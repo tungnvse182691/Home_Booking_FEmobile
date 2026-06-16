@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import '../providers/create_room_provider.dart';
@@ -143,6 +143,7 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
           const SizedBox(height: 16),
           DropdownButtonFormField<String>(
             value: state.roomTypeId.isEmpty ? null : state.roomTypeId,
+            isExpanded: true,
             decoration: const InputDecoration(
               labelText: 'Loại phòng *',
               border: OutlineInputBorder(),

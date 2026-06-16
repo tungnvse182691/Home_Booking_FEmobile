@@ -1,8 +1,10 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../providers/host_provider.dart';
 import '../models/host_model.dart';
+import '../../../utils/app_theme.dart';
 
 class HostRevenueScreen extends ConsumerWidget {
   const HostRevenueScreen({super.key});
@@ -17,34 +19,51 @@ class HostRevenueScreen extends ConsumerWidget {
     );
 
     return Scaffold(
+      backgroundColor: AppTheme.background,
       appBar: AppBar(
-        title: const Text('Báo cáo doanh thu',
-            style: TextStyle(fontWeight: FontWeight.bold)),
+        backgroundColor: AppTheme.background,
+        elevation: 0,
+        surfaceTintColor: Colors.transparent,
+        title: Text(
+          'Báo cáo doanh thu',
+          style: GoogleFonts.poppins(
+            fontWeight: FontWeight.w700,
+            fontSize: 20,
+            color: AppTheme.textPrimary,
+          ),
+        ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh),
+            icon: const Icon(Icons.refresh_rounded, color: AppTheme.textPrimary),
             tooltip: 'Tải lại',
             onPressed: () => ref.invalidate(hostRevenueProvider),
           ),
         ],
       ),
       body: revenueAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const Center(
+          child: CircularProgressIndicator(color: AppTheme.primary),
+        ),
         error: (err, stack) => Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.error_outline, size: 64, color: Colors.red),
-              const SizedBox(height: 16),
+              const Icon(Icons.error_outline_rounded, size: 56, color: Color(0xFFE57373)),
+              const SizedBox(height: 12),
               Text(
-                'Loi: $err',
-                textAlign: TextAlign.center,
-                style: const TextStyle(color: Colors.red),
+                'Có lỗi xảy ra',
+                style: GoogleFonts.poppins(fontWeight: FontWeight.w600, color: AppTheme.textPrimary),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 8),
+              Text(
+                err.toString(),
+                textAlign: TextAlign.center,
+                style: GoogleFonts.dmSans(color: const Color(0xFFE57373), fontSize: 13),
+              ),
+              const SizedBox(height: 20),
               ElevatedButton.icon(
                 onPressed: () => ref.invalidate(hostRevenueProvider),
-                icon: const Icon(Icons.refresh),
+                icon: const Icon(Icons.refresh_rounded),
                 label: const Text('Thử lại'),
               ),
             ],
@@ -55,22 +74,26 @@ class HostRevenueScreen extends ConsumerWidget {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(Icons.bar_chart, size: 80, color: Colors.grey),
+                    const Icon(Icons.bar_chart_rounded, size: 72, color: AppTheme.textHint),
                     const SizedBox(height: 16),
-                    const Text(
+                    Text(
                       'Chưa có dữ liệu doanh thu',
-                      style: TextStyle(color: Colors.grey, fontSize: 16),
+                      style: GoogleFonts.poppins(
+                        color: AppTheme.textPrimary,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                     const SizedBox(height: 8),
-                    const Text(
-                      'Doanh thu sẽ hiển thị khi có booking thanh toán',
-                      style: TextStyle(color: Colors.grey, fontSize: 13),
+                    Text(
+                      'Doanh thu sẽ hiển thị khi có đơn đặt phòng được thanh toán',
+                      style: GoogleFonts.dmSans(color: AppTheme.textSecondary, fontSize: 13),
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 24),
                     ElevatedButton.icon(
                       onPressed: () => ref.invalidate(hostRevenueProvider),
-                      icon: const Icon(Icons.refresh),
+                      icon: const Icon(Icons.refresh_rounded),
                       label: const Text('Tải lại'),
                     ),
                   ],
@@ -97,41 +120,52 @@ class _RevenueContent extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Tong doanh thu card
+          // Tong doanh thu card - premium white card style
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFF1976D2), Color(0xFF42A5F5)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(12),
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(24),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.04),
+                  blurRadius: 16,
+                  offset: const Offset(0, 4),
+                ),
+              ],
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Tổng doanh thu',
-                  style: TextStyle(color: Colors.white70, fontSize: 14),
+                  style: GoogleFonts.dmSans(
+                    color: AppTheme.textSecondary,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 6),
                 Text(
                   currencyFormat.format(total),
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 24,
+                  style: GoogleFonts.poppins(
+                    color: AppTheme.primary,
+                    fontSize: 28,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 24),
-          const Text(
+          const SizedBox(height: 28),
+          Text(
             'Doanh thu theo tháng',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            style: GoogleFonts.poppins(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: AppTheme.textPrimary,
+            ),
           ),
           const SizedBox(height: 16),
           SizedBox(
@@ -139,24 +173,38 @@ class _RevenueContent extends StatelessWidget {
             child: _RevenueChart(data: data, currencyFormat: currencyFormat),
           ),
           const SizedBox(height: 24),
-          const Divider(),
+          const Divider(color: Color(0xFFEEEEEE)),
+          const SizedBox(height: 8),
           Expanded(
             child: ListView.separated(
               itemCount: data.length,
-              separatorBuilder: (_, __) => const Divider(height: 1),
+              separatorBuilder: (_, __) => const Divider(color: Color(0xFFEEEEEE), height: 1),
               itemBuilder: (context, index) {
                 final item = data[index];
                 return ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: const Icon(Icons.calendar_month, color: Colors.blue),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+                  leading: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: AppTheme.primary.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(Icons.calendar_month_outlined, color: AppTheme.primary, size: 18),
+                  ),
                   title: Text(
-                    item.month.isEmpty ? 'Thang ${index + 1}' : item.month,
+                    item.month.isEmpty ? 'Tháng ${index + 1}' : item.month,
+                    style: GoogleFonts.poppins(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                      color: AppTheme.textPrimary,
+                    ),
                   ),
                   trailing: Text(
                     currencyFormat.format(item.amount),
-                    style: const TextStyle(
+                    style: GoogleFonts.poppins(
                       fontWeight: FontWeight.bold,
-                      fontSize: 15,
+                      fontSize: 14,
+                      color: AppTheme.textPrimary,
                     ),
                   ),
                 );
@@ -186,48 +234,80 @@ class _RevenueChart extends StatelessWidget {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        return Row(
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: data.map((item) {
-            final ratio = item.amount / maxAmount;
-            return Expanded(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 4),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    Text(
-                      currencyFormat.format(item.amount),
-                      style: const TextStyle(
-                          fontSize: 9, fontWeight: FontWeight.w600),
-                      textAlign: TextAlign.center,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 4),
-                    Container(
-                      height: (constraints.maxHeight - 56) * ratio,
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFF1976D2), Color(0xFF42A5F5)],
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                        ),
-                        borderRadius: BorderRadius.circular(6),
+        final chartHeight = constraints.maxHeight - 42;
+
+        return Stack(
+          children: [
+            // Background Grid Lines
+            Column(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: List.generate(4, (index) => Container(
+                height: 1,
+                color: const Color(0xFFEEEEEE),
+              )),
+            ),
+            // The Bars
+            Positioned.fill(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: data.map((item) {
+                  final ratio = item.amount / maxAmount;
+                  final barHeight = chartHeight * ratio;
+
+                  return Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 10),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          Text(
+                            currencyFormat.format(item.amount),
+                            style: GoogleFonts.dmSans(
+                              fontSize: 9,
+                              fontWeight: FontWeight.w600,
+                              color: AppTheme.textPrimary,
+                            ),
+                            textAlign: TextAlign.center,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 4),
+                          Container(
+                            height: barHeight.clamp(4.0, chartHeight),
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [
+                                  AppTheme.primary,
+                                  AppTheme.primary.withValues(alpha: 0.7),
+                                ],
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
+                              ),
+                              borderRadius: const BorderRadius.only(
+                                topLeft: Radius.circular(6),
+                                topRight: Radius.circular(6),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            item.month.isEmpty ? '-' : item.month,
+                            style: GoogleFonts.dmSans(
+                              fontSize: 10,
+                              color: AppTheme.textSecondary,
+                              fontWeight: FontWeight.w500,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
                       ),
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      item.month.isEmpty ? '-' : item.month,
-                      style: const TextStyle(fontSize: 10),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                ),
+                  );
+                }).toList(),
               ),
-            );
-          }).toList(),
+            ),
+          ],
         );
       },
     );

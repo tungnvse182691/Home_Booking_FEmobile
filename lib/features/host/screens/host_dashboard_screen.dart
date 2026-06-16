@@ -1,9 +1,12 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../providers/host_provider.dart';
 import '../models/host_model.dart';
+import '../../../utils/app_theme.dart';
+import '../../../widgets/animated_pressable_card.dart';
 
 class HostDashboardScreen extends ConsumerWidget {
   const HostDashboardScreen({super.key});
@@ -18,19 +21,53 @@ class HostDashboardScreen extends ConsumerWidget {
     );
 
     return Scaffold(
+      backgroundColor: AppTheme.background,
       appBar: AppBar(
-        title: const Text(
-          'Host Dashboard',
-          style: TextStyle(fontWeight: FontWeight.bold),
+        backgroundColor: AppTheme.background,
+        elevation: 0,
+        surfaceTintColor: Colors.transparent,
+        title: Text(
+          'Bảng điều khiển Host',
+          style: GoogleFonts.poppins(
+            fontWeight: FontWeight.w700,
+            fontSize: 20,
+            color: AppTheme.textPrimary,
+          ),
         ),
       ),
       body: RefreshIndicator(
+        color: AppTheme.primary,
         onRefresh: () => ref.refresh(hostDashboardProvider.future),
         child: dashboardAsync.when(
-          loading: () => const Center(child: CircularProgressIndicator()),
-          error: (err, stack) => Center(child: Text('Lỗi: $err')),
+          loading: () => const Center(
+            child: CircularProgressIndicator(color: AppTheme.primary),
+          ),
+          error: (err, stack) => Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.error_outline_rounded, size: 56, color: Color(0xFFE57373)),
+                const SizedBox(height: 12),
+                Text(
+                  'Không thể tải dữ liệu',
+                  style: GoogleFonts.poppins(fontWeight: FontWeight.w600, color: AppTheme.textPrimary),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  err.toString(),
+                  style: GoogleFonts.dmSans(color: AppTheme.textSecondary, fontSize: 13),
+                ),
+                const SizedBox(height: 20),
+                ElevatedButton.icon(
+                  onPressed: () => ref.refresh(hostDashboardProvider.future),
+                  icon: const Icon(Icons.refresh_rounded),
+                  label: const Text('Thử lại'),
+                ),
+              ],
+            ),
+          ),
           data: (data) => SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
             physics: const AlwaysScrollableScrollPhysics(),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -42,7 +79,7 @@ class HostDashboardScreen extends ConsumerWidget {
                         title: 'Tổng phòng',
                         value: data.totalRooms.toString(),
                         icon: Icons.apartment_outlined,
-                        color: Colors.blue,
+                        color: AppTheme.primary,
                         onTap: () => context.push('/host/rooms'),
                       ),
                     ),
@@ -52,24 +89,28 @@ class HostDashboardScreen extends ConsumerWidget {
                         title: 'Tổng booking',
                         value: data.totalBookings.toString(),
                         icon: Icons.event_note_outlined,
-                        color: Colors.green,
+                        color: AppTheme.primary,
                         onTap: () => context.push('/host/bookings'),
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 12),
                 _StatCard(
                   title: 'Tổng doanh thu',
                   value: currencyFormat.format(data.totalRevenue),
                   icon: Icons.payments_outlined,
-                  color: Colors.orange,
+                  color: AppTheme.primary,
                   onTap: () => context.push('/host/revenue'),
                 ),
-                const SizedBox(height: 24),
-                const Text(
+                const SizedBox(height: 28),
+                Text(
                   'Đơn đặt phòng gần đây',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  style: GoogleFonts.poppins(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: AppTheme.textPrimary,
+                  ),
                 ),
                 const SizedBox(height: 12),
                 _buildRecentBookings(context, data.recentBookings),
@@ -83,31 +124,61 @@ class HostDashboardScreen extends ConsumerWidget {
 
   Widget _buildRecentBookings(BuildContext context, List<RecentBooking> bookings) {
     if (bookings.isEmpty) {
-      return const Padding(
-        padding: EdgeInsets.symmetric(vertical: 24),
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 32),
         child: Center(
           child: Text(
             'Không có đơn đặt phòng nào gần đây',
-            style: TextStyle(color: Colors.grey),
+            style: GoogleFonts.dmSans(color: AppTheme.textSecondary),
           ),
         ),
       );
     }
 
-    return ListView.builder(
+    return ListView.separated(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       itemCount: bookings.length,
+      separatorBuilder: (_, __) => const SizedBox(height: 8),
       itemBuilder: (context, index) {
         final b = bookings[index];
-        return ListTile(
-          leading: const CircleAvatar(child: Icon(Icons.person)),
-          title: Text(b.customerName),
-          subtitle: Text(
-            b.roomName.isNotEmpty ? b.roomName : 'Mã: ${b.bookingCode}',
+        return Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.02),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
-          trailing: _buildStatusBadge(b.status),
-          onTap: () => context.push('/host/bookings'),
+          child: ListTile(
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+            leading: CircleAvatar(
+              backgroundColor: AppTheme.primary.withValues(alpha: 0.1),
+              foregroundColor: AppTheme.primary,
+              child: const Icon(Icons.person_outline_rounded),
+            ),
+            title: Text(
+              b.customerName,
+              style: GoogleFonts.poppins(
+                fontWeight: FontWeight.w600,
+                fontSize: 14,
+                color: AppTheme.textPrimary,
+              ),
+            ),
+            subtitle: Text(
+              b.roomName.isNotEmpty ? b.roomName : 'Mã: ${b.bookingCode}',
+              style: GoogleFonts.dmSans(
+                fontSize: 12,
+                color: AppTheme.textSecondary,
+              ),
+            ),
+            trailing: _buildStatusBadge(b.status),
+            onTap: () => context.push('/host/bookings'),
+          ),
         );
       },
     );
@@ -120,36 +191,40 @@ class HostDashboardScreen extends ConsumerWidget {
     String label;
 
     if (normalized.contains('CANCEL')) {
-      backgroundColor = Colors.red.withValues(alpha: 0.1);
-      foregroundColor = Colors.red;
+      backgroundColor = const Color(0xFFE57373).withValues(alpha: 0.1);
+      foregroundColor = const Color(0xFFE57373);
       label = 'Đã hủy';
     } else if (normalized.contains('DONE') || normalized.contains('COMPLETE')) {
-      backgroundColor = Colors.green.withValues(alpha: 0.1);
-      foregroundColor = Colors.green;
+      backgroundColor = AppTheme.success.withValues(alpha: 0.1);
+      foregroundColor = AppTheme.success;
       label = 'Hoàn thành';
     } else if (normalized.contains('PENDING') || normalized.contains('WAIT')) {
-      backgroundColor = Colors.orange.withValues(alpha: 0.12);
-      foregroundColor = Colors.orange;
+      backgroundColor = const Color(0xFFFFB74D).withValues(alpha: 0.12);
+      foregroundColor = const Color(0xFFFFB74D);
       label = 'Chờ duyệt';
     } else if (normalized.contains('CONFIRM')) {
-      backgroundColor = Colors.blue.withValues(alpha: 0.1);
-      foregroundColor = Colors.blue;
+      backgroundColor = AppTheme.primary.withValues(alpha: 0.1);
+      foregroundColor = AppTheme.primary;
       label = 'Đã xác nhận';
     } else {
-      backgroundColor = Colors.grey.withValues(alpha: 0.12);
-      foregroundColor = Colors.grey;
+      backgroundColor = AppTheme.textSecondary.withValues(alpha: 0.12);
+      foregroundColor = AppTheme.textSecondary;
       label = status;
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
         color: backgroundColor,
-        borderRadius: BorderRadius.circular(4),
+        borderRadius: BorderRadius.circular(999),
       ),
       child: Text(
         label,
-        style: TextStyle(fontSize: 12, color: foregroundColor, fontWeight: FontWeight.w600),
+        style: GoogleFonts.dmSans(
+          fontSize: 11,
+          color: foregroundColor,
+          fontWeight: FontWeight.w600,
+        ),
       ),
     );
   }
@@ -160,73 +235,70 @@ class _StatCard extends StatelessWidget {
   final String value;
   final IconData icon;
   final Color color;
-  final VoidCallback? onTap;
+  final VoidCallback onTap;
 
   const _StatCard({
     required this.title,
     required this.value,
     required this.icon,
     required this.color,
-    this.onTap,
+    required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return AnimatedPressableCard(
       onTap: onTap,
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: color.withValues(alpha: 0.18)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
-            ),
-          ],
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(16),
+      shadows: [
+        BoxShadow(
+          color: Colors.black.withValues(alpha: 0.04),
+          blurRadius: 12,
+          offset: const Offset(0, 4),
         ),
-        child: Row(
-          children: [
-            Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(icon, color: color),
+      ],
+      padding: const EdgeInsets.all(16),
+      child: Row(
+        children: [
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(12),
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: TextStyle(color: Colors.grey[700], fontSize: 13),
+            child: Icon(icon, color: color, size: 20),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: GoogleFonts.dmSans(
+                    color: AppTheme.textSecondary,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    value,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: color,
-                    ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  value,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.poppins(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: AppTheme.textPrimary,
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-            if (onTap != null)
-              Icon(Icons.chevron_right, color: color.withValues(alpha: 0.5), size: 18),
-          ],
-        ),
+          ),
+          Icon(Icons.chevron_right_rounded, color: AppTheme.textHint, size: 18),
+        ],
       ),
     );
   }

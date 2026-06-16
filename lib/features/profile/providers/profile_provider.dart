@@ -23,6 +23,15 @@ class ProfileNotifier extends StateNotifier<ProfileState> {
 
   ProfileNotifier(this.ref) : super(ProfileState()) {
     fetchProfile();
+    
+    // Tự động tải lại/xóa thông tin profile khi trạng thái đăng nhập thay đổi (Login/Logout)
+    ref.listen<UserModel?>(authStateProvider, (previous, next) {
+      if (next == null) {
+        state = ProfileState();
+      } else {
+        fetchProfile();
+      }
+    });
   }
 
   Future<void> fetchProfile() async {
@@ -40,16 +49,20 @@ class ProfileNotifier extends StateNotifier<ProfileState> {
     String fullName,
     String phone,
     String? avatarUrl,
+    String email,
   ) async {
-    state = state.copyWith(isLoading: true);
+    state = state.copyWith(isLoading: true, error: null);
     try {
       final updatedUser = await ref
           .read(authStateProvider.notifier)
-          .updateProfile(fullName, phone, avatarUrl);
+          .updateProfile(fullName, phone, avatarUrl, email);
       state = state.copyWith(isLoading: false, user: updatedUser);
       return true;
     } catch (e) {
-      state = state.copyWith(isLoading: false, error: e.toString());
+      state = state.copyWith(
+        isLoading: false,
+        error: e.toString().replaceFirst('Exception: ', ''),
+      );
       return false;
     }
   }

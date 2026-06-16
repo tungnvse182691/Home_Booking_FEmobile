@@ -24,6 +24,7 @@ class CreateRoomState {
   final String areaName;
   final String roomTypeId;
   final bool isFeatured;
+  final bool isAdmin;
   final bool isLoading;
   final String? error;
 
@@ -48,6 +49,7 @@ class CreateRoomState {
     this.areaName = '',
     this.roomTypeId = '',
     this.isFeatured = false,
+    this.isAdmin = false,
     this.isLoading = false,
     this.error,
   });
@@ -73,6 +75,7 @@ class CreateRoomState {
     String? areaName,
     String? roomTypeId,
     bool? isFeatured,
+    bool? isAdmin,
     bool? isLoading,
     String? error,
   }) {
@@ -97,6 +100,7 @@ class CreateRoomState {
       areaName: areaName ?? this.areaName,
       roomTypeId: roomTypeId ?? this.roomTypeId,
       isFeatured: isFeatured ?? this.isFeatured,
+      isAdmin: isAdmin ?? this.isAdmin,
       isLoading: isLoading ?? this.isLoading,
       error: error,
     );
@@ -111,6 +115,8 @@ class CreateRoomNotifier extends StateNotifier<CreateRoomState> {
   void setStep(int step) => state = state.copyWith(currentStep: step);
 
   void setRoomId(String? roomId) => state = state.copyWith(roomId: roomId);
+
+  void setIsAdmin(bool isAdmin) => state = state.copyWith(isAdmin: isAdmin);
 
   void reset() => state = CreateRoomState();
 

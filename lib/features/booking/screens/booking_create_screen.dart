@@ -164,12 +164,12 @@ class _BookingCreateScreenState extends ConsumerState<BookingCreateScreen> {
                 const SizedBox(height: 8),
                 DropdownButtonFormField<String>(
                   initialValue: _paymentMethod,
+                  isExpanded: true,
                   decoration: const InputDecoration(
                     border: OutlineInputBorder(),
                   ),
                   items: const [
                     DropdownMenuItem(value: 'CASH', child: Text('Tiền mặt')),
-                    DropdownMenuItem(value: 'MOMO', child: Text('Ví MoMo')),
                     DropdownMenuItem(value: 'VNPAY', child: Text('VNPAY')),
                   ],
                   onChanged: (v) => setState(() => _paymentMethod = v!),

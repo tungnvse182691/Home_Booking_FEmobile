@@ -3,10 +3,13 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
 import '../../../utils/app_theme.dart';
+import '../../../widgets/animated_pressable_card.dart';
 import '../models/room_model.dart';
 import '../providers/room_list_provider.dart';
 
@@ -21,6 +24,7 @@ class _CustomerHomeScreenState extends ConsumerState<CustomerHomeScreen> {
   final ScrollController _scrollController = ScrollController();
   final TextEditingController _searchController = TextEditingController();
   Timer? _searchDebounce;
+  Offset? _fabPosition;
 
   static const List<String> _cities = [
     'Tất cả',
@@ -37,6 +41,7 @@ class _CustomerHomeScreenState extends ConsumerState<CustomerHomeScreen> {
 
   String _selectedCity = '';
   String _selectedRoomTypeId = '';
+  final List<String> _selectedAmenities = [];
   double _minPrice = _minRoomPrice;
   double _maxPrice = _maxRoomPrice;
 
@@ -73,6 +78,7 @@ class _CustomerHomeScreenState extends ConsumerState<CustomerHomeScreen> {
         searchQuery: _searchController.text.trim(),
         city: _selectedCity,
         roomTypeId: _selectedRoomTypeId,
+        selectedAmenities: List.from(_selectedAmenities),
         minPrice: _minPrice,
         maxPrice: _maxPrice,
       ),
@@ -132,94 +138,164 @@ class _CustomerHomeScreenState extends ConsumerState<CustomerHomeScreen> {
           ),
         ),
       ),
-      body: RefreshIndicator(
-        onRefresh: _refresh,
-        child: CustomScrollView(
-          controller: _scrollController,
-          physics: const AlwaysScrollableScrollPhysics(),
-          slivers: [
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
-                child: _buildFilterPanel(roomTypesAsync, currencyFormat),
-              ),
-            ),
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-                child: amenitiesAsync.when(
-                  data: (amenities) => _buildAmenitiesStrip(amenities),
-                  loading: () => const SizedBox.shrink(),
-                  error: (_, __) => const SizedBox.shrink(),
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          final maxWidth = constraints.maxWidth;
+          final maxHeight = constraints.maxHeight;
+
+          if (_fabPosition == null || _fabPosition!.dx <= 0 || _fabPosition!.dy <= 0) {
+            _fabPosition = Offset(maxWidth - 72, maxHeight - 72);
+          } else if (_fabPosition!.dx > maxWidth - 72 || _fabPosition!.dy > maxHeight - 72) {
+            _fabPosition = Offset(
+              _fabPosition!.dx.clamp(16.0, maxWidth - 72.0),
+              _fabPosition!.dy.clamp(16.0, maxHeight - 72.0),
+            );
+          }
+
+          return Stack(
+            children: [
+              RefreshIndicator(
+                onRefresh: _refresh,
+                child: AnimationLimiter(
+                  child: CustomScrollView(
+                    controller: _scrollController,
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    slivers: [
+                      SliverToBoxAdapter(
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+                          child: _buildFilterPanel(roomTypesAsync, currencyFormat),
+                        ),
+                      ),
+                      SliverToBoxAdapter(
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                          child: amenitiesAsync.when(
+                            data: (amenities) => _buildAmenitiesStrip(amenities),
+                            loading: () => const SizedBox.shrink(),
+                            error: (_, __) => const SizedBox.shrink(),
+                          ),
+                        ),
+                      ),
+                      if (roomState.isLoading && roomState.items.isEmpty)
+                        const SliverFillRemaining(
+                          hasScrollBody: false,
+                          child: Center(child: CircularProgressIndicator()),
+                        )
+                      else if (roomState.error != null && roomState.items.isEmpty)
+                        SliverFillRemaining(
+                          hasScrollBody: false,
+                          child: Center(
+                            child: Padding(
+                              padding: const EdgeInsets.all(24),
+                              child: Text(
+                                roomState.error!,
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(color: Colors.red),
+                              ),
+                            ),
+                          ),
+                        )
+                      else if (roomState.items.isEmpty)
+                        const SliverFillRemaining(
+                          hasScrollBody: false,
+                          child: Center(
+                            child: Text('Không tìm thấy phòng nào phù hợp'),
+                          ),
+                        )
+                      else ...[
+                        SliverPadding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          sliver: SliverGrid(
+                            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 1,
+                              mainAxisExtent: 360,
+                              mainAxisSpacing: 12,
+                            ),
+                            delegate: SliverChildBuilderDelegate(
+                              (context, index) {
+                                final room = roomState.items[index];
+                                return AnimationConfiguration.staggeredGrid(
+                                  position: index,
+                                  duration: const Duration(milliseconds: 375),
+                                  columnCount: 1,
+                                  child: SlideAnimation(
+                                    verticalOffset: 50.0,
+                                    child: FadeInAnimation(
+                                      child: _RoomCard(
+                                        room: room,
+                                        currencyFormat: currencyFormat,
+                                        onTap: () => context.push('/rooms/${room.roomId}'),
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              },
+                              childCount: roomState.items.length,
+                            ),
+                          ),
+                        ),
+                        SliverToBoxAdapter(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            child: roomState.isLoadMore
+                                ? const Center(child: CircularProgressIndicator())
+                                : roomState.hasMore
+                                    ? Center(
+                                        child: TextButton(
+                                          onPressed: () => ref.read(roomListProvider.notifier).loadMore(),
+                                          child: const Text('Load More'),
+                                        ),
+                                      )
+                                    : const SizedBox.shrink(),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
                 ),
               ),
-            ),
-            if (roomState.isLoading && roomState.items.isEmpty)
-              const SliverFillRemaining(
-                hasScrollBody: false,
-                child: Center(child: CircularProgressIndicator()),
-              )
-            else if (roomState.error != null && roomState.items.isEmpty)
-              SliverFillRemaining(
-                hasScrollBody: false,
-                child: Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: Text(
-                      roomState.error!,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(color: Colors.red),
+              Positioned(
+                left: _fabPosition!.dx,
+                top: _fabPosition!.dy,
+                child: GestureDetector(
+                  onPanUpdate: (details) {
+                    setState(() {
+                      double newX = _fabPosition!.dx + details.delta.dx;
+                      double newY = _fabPosition!.dy + details.delta.dy;
+
+                      newX = newX.clamp(16.0, maxWidth - 72.0);
+                      newY = newY.clamp(16.0, maxHeight - 72.0);
+
+                      _fabPosition = Offset(newX, newY);
+                    });
+                  },
+                  onTap: () => context.push('/chat'),
+                  child: Container(
+                    width: 56,
+                    height: 56,
+                    decoration: BoxDecoration(
+                      color: AppTheme.primary,
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.2),
+                          blurRadius: 8,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: const Icon(
+                      Icons.forum_outlined,
+                      color: Colors.white,
+                      size: 26,
                     ),
                   ),
                 ),
-              )
-            else if (roomState.items.isEmpty)
-              const SliverFillRemaining(
-                hasScrollBody: false,
-                child: Center(
-                  child: Text('Không tìm thấy phòng nào phù hợp'),
-                ),
-              )
-            else ...[
-              SliverPadding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                sliver: SliverGrid(
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 1,
-                    mainAxisExtent: 360,
-                    mainAxisSpacing: 12,
-                  ),
-                  delegate: SliverChildBuilderDelegate(
-                    (context, index) {
-                      final room = roomState.items[index];
-                      return _RoomCard(
-                        room: room,
-                        currencyFormat: currencyFormat,
-                        onTap: () => context.push('/rooms/${room.roomId}'),
-                      );
-                    },
-                    childCount: roomState.items.length,
-                  ),
-                ),
-              ),
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  child: roomState.isLoadMore
-                      ? const Center(child: CircularProgressIndicator())
-                      : roomState.hasMore
-                          ? Center(
-                              child: TextButton(
-                                onPressed: () => ref.read(roomListProvider.notifier).loadMore(),
-                                child: const Text('Load More'),
-                              ),
-                            )
-                          : const SizedBox.shrink(),
-                ),
               ),
             ],
-          ],
-        ),
+          );
+        },
       ),
     );
   }
@@ -228,84 +304,229 @@ class _CustomerHomeScreenState extends ConsumerState<CustomerHomeScreen> {
     AsyncValue<List<RoomType>> roomTypesAsync,
     NumberFormat currencyFormat,
   ) {
+    final hasActiveFilters = _selectedCity.isNotEmpty ||
+        _selectedRoomTypeId.isNotEmpty ||
+        _selectedAmenities.isNotEmpty ||
+        _minPrice != _minRoomPrice ||
+        _maxPrice != _maxRoomPrice;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        if (hasActiveFilters) ...[
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton.icon(
+              onPressed: () {
+                setState(() {
+                  _selectedCity = '';
+                  _selectedRoomTypeId = '';
+                  _selectedAmenities.clear();
+                  _minPrice = _minRoomPrice;
+                  _maxPrice = _maxRoomPrice;
+                });
+                _applyFilters();
+              },
+              icon: const Icon(Icons.refresh, size: 14),
+              label: const Text(
+                'Xóa tất cả bộ lọc',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 13,
+                ),
+              ),
+              style: TextButton.styleFrom(
+                foregroundColor: AppTheme.primary,
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+        ],
         SingleChildScrollView(
           scrollDirection: Axis.horizontal,
+          clipBehavior: Clip.none, // Ngăn chặn cắt khi cuộn ngang
           child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               SizedBox(
                 width: 180,
-                child: DropdownButtonFormField<String>(
-                  value: _selectedCity.isEmpty ? null : _selectedCity,
-                  decoration: const InputDecoration(
-                    labelText: 'City',
-                    border: OutlineInputBorder(),
-                    isDense: true,
-                  ),
-                  items: _cities
-                      .map(
-                        (city) => DropdownMenuItem(
-                          value: city == 'Tất cả' ? '' : city,
-                          child: Text(city),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Padding(
+                      padding: EdgeInsets.only(left: 4, bottom: 6),
+                      child: Text(
+                        'Thành phố',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.black87,
                         ),
-                      )
-                      .toList(),
-                  onChanged: (value) {
-                    setState(() => _selectedCity = value ?? '');
-                    _applyFilters();
-                  },
+                      ),
+                    ),
+                    DropdownButtonFormField<String>(
+                      value: _selectedCity,
+                      isExpanded: true,
+                      decoration: InputDecoration(
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(24),
+                          borderSide: const BorderSide(color: Color(0xFFEEEEEE)),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(24),
+                          borderSide: const BorderSide(color: Color(0xFFEEEEEE)),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(24),
+                          borderSide: const BorderSide(color: AppTheme.primary, width: 1.5),
+                        ),
+                        filled: true,
+                        fillColor: const Color(0xFFF5F5F5),
+                      ),
+                      icon: _selectedCity.isNotEmpty
+                          ? GestureDetector(
+                              onTap: () {
+                                setState(() => _selectedCity = '');
+                                _applyFilters();
+                              },
+                              child: const Icon(Icons.clear, size: 18, color: Colors.grey),
+                            )
+                          : const Icon(Icons.arrow_drop_down),
+                      items: _cities
+                          .map(
+                            (city) => DropdownMenuItem(
+                              value: city == 'Tất cả' ? '' : city,
+                              child: Text(city),
+                            ),
+                          )
+                          .toList(),
+                      onChanged: (value) {
+                        setState(() => _selectedCity = value ?? '');
+                        _applyFilters();
+                      },
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(width: 12),
               SizedBox(
                 width: 200,
-                child: roomTypesAsync.when(
-                  data: (roomTypes) => DropdownButtonFormField<String>(
-                    value: _selectedRoomTypeId.isEmpty ? null : _selectedRoomTypeId,
-                    decoration: const InputDecoration(
-                      labelText: 'Room Type',
-                      border: OutlineInputBorder(),
-                      isDense: true,
-                    ),
-                    items: [
-                      const DropdownMenuItem(value: '', child: Text('Tất cả loại phòng')),
-                      ...roomTypes.map(
-                        (roomType) => DropdownMenuItem(
-                          value: roomType.roomTypeId,
-                          child: Text(roomType.name),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Padding(
+                      padding: EdgeInsets.only(left: 4, bottom: 6),
+                      child: Text(
+                        'Loại phòng',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.black87,
                         ),
                       ),
-                    ],
-                    onChanged: (value) {
-                      setState(() => _selectedRoomTypeId = value ?? '');
-                      _applyFilters();
-                    },
-                  ),
-                  loading: () => const InputDecorator(
-                    decoration: InputDecoration(
-                      labelText: 'Room Type',
-                      border: OutlineInputBorder(),
-                      isDense: true,
                     ),
-                    child: SizedBox(
-                      height: 20,
-                      child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                    roomTypesAsync.when(
+                      data: (roomTypes) => DropdownButtonFormField<String>(
+                        value: _selectedRoomTypeId,
+                        isExpanded: true,
+                        decoration: InputDecoration(
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(24),
+                            borderSide: const BorderSide(color: Color(0xFFEEEEEE)),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(24),
+                            borderSide: const BorderSide(color: Color(0xFFEEEEEE)),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(24),
+                            borderSide: const BorderSide(color: AppTheme.primary, width: 1.5),
+                          ),
+                          filled: true,
+                          fillColor: const Color(0xFFF5F5F5),
+                        ),
+                        icon: _selectedRoomTypeId.isNotEmpty
+                            ? GestureDetector(
+                                onTap: () {
+                                  setState(() => _selectedRoomTypeId = '');
+                                  _applyFilters();
+                                },
+                                child: const Icon(Icons.clear, size: 18, color: Colors.grey),
+                              )
+                            : const Icon(Icons.arrow_drop_down),
+                        items: [
+                          const DropdownMenuItem(value: '', child: Text('Tất cả loại phòng')),
+                          ...roomTypes.map(
+                            (roomType) => DropdownMenuItem(
+                              value: roomType.roomTypeId,
+                              child: Text(roomType.name),
+                            ),
+                          ),
+                        ],
+                        onChanged: (value) {
+                          setState(() => _selectedRoomTypeId = value ?? '');
+                          _applyFilters();
+                        },
+                      ),
+                      loading: () => InputDecorator(
+                        decoration: InputDecoration(
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(24),
+                            borderSide: const BorderSide(color: Color(0xFFEEEEEE)),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(24),
+                            borderSide: const BorderSide(color: Color(0xFFEEEEEE)),
+                          ),
+                          filled: true,
+                          fillColor: const Color(0xFFF5F5F5),
+                        ),
+                        child: const SizedBox(
+                          height: 20,
+                          child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                        ),
+                      ),
+                      error: (_, __) => DropdownButtonFormField<String>(
+                        value: _selectedRoomTypeId,
+                        isExpanded: true,
+                        decoration: InputDecoration(
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(24),
+                            borderSide: const BorderSide(color: Color(0xFFEEEEEE)),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(24),
+                            borderSide: const BorderSide(color: Color(0xFFEEEEEE)),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(24),
+                            borderSide: const BorderSide(color: AppTheme.primary, width: 1.5),
+                          ),
+                          filled: true,
+                          fillColor: const Color(0xFFF5F5F5),
+                        ),
+                        icon: _selectedRoomTypeId.isNotEmpty
+                            ? GestureDetector(
+                                onTap: () {
+                                  setState(() => _selectedRoomTypeId = '');
+                                  _applyFilters();
+                                },
+                                child: const Icon(Icons.clear, size: 18, color: Colors.grey),
+                              )
+                            : const Icon(Icons.arrow_drop_down),
+                        items: const [
+                          DropdownMenuItem(value: '', child: Text('Tất cả loại phòng')),
+                        ],
+                        onChanged: (_) {},
+                      ),
                     ),
-                  ),
-                  error: (_, __) => DropdownButtonFormField<String>(
-                    value: null,
-                    decoration: const InputDecoration(
-                      labelText: 'Room Type',
-                      border: OutlineInputBorder(),
-                      isDense: true,
-                    ),
-                    items: const [
-                      DropdownMenuItem(value: '', child: Text('Tất cả loại phòng')),
-                    ],
-                    onChanged: (_) {},
-                  ),
+                  ],
                 ),
               ),
             ],
@@ -352,12 +573,37 @@ class _CustomerHomeScreenState extends ConsumerState<CustomerHomeScreen> {
           height: 38,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
-            itemCount: amenities.length.clamp(0, 10),
+            itemCount: amenities.length,
             separatorBuilder: (_, __) => const SizedBox(width: 8),
             itemBuilder: (context, index) {
               final amenity = amenities[index];
-              return Chip(
+              final isSelected = _selectedAmenities.contains(amenity.amenityId);
+
+              return FilterChip(
                 label: Text(amenity.name),
+                selected: isSelected,
+                onSelected: (selected) {
+                  setState(() {
+                    if (selected) {
+                      _selectedAmenities.add(amenity.amenityId);
+                    } else {
+                      _selectedAmenities.remove(amenity.amenityId);
+                    }
+                  });
+                  _applyFilters();
+                },
+                selectedColor: AppTheme.primary.withOpacity(0.12),
+                checkmarkColor: AppTheme.primary,
+                labelStyle: TextStyle(
+                  color: isSelected ? AppTheme.primary : AppTheme.textPrimary,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                ),
+                shape: StadiumBorder(
+                  side: BorderSide(
+                    color: isSelected ? AppTheme.primary : const Color(0xFFEEEEEE),
+                    width: 1,
+                  ),
+                ),
                 visualDensity: VisualDensity.compact,
               );
             },
@@ -381,37 +627,50 @@ class _RoomCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      elevation: 2,
-      clipBehavior: Clip.antiAlias,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: InkWell(
-        onTap: onTap,
+    return AnimatedPressableCard(
+      onTap: onTap,
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(20),
+      shadows: [
+        BoxShadow(
+          color: Colors.black.withValues(alpha: 0.04),
+          blurRadius: 16,
+          offset: const Offset(0, 4),
+        ),
+      ],
+      padding: EdgeInsets.zero,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            AspectRatio(
-              aspectRatio: 16 / 9,
-              child: room.thumbnailUrl.startsWith('http')
-                  ? Image.network(
-                      room.thumbnailUrl,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) => Container(
-                        color: Colors.grey.shade300,
-                        child: const Icon(Icons.broken_image_outlined, size: 40),
+            Hero(
+              tag: 'room_image_${room.roomId}',
+              child: AspectRatio(
+                aspectRatio: 16 / 9,
+                child: room.thumbnailUrl.startsWith('http')
+                    ? Image.network(
+                        room.thumbnailUrl,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) => Container(
+                          color: const Color(0xFFF3F4F6),
+                          alignment: Alignment.center,
+                          child: const Icon(Icons.broken_image_outlined, size: 40, color: AppTheme.textHint),
+                        ),
+                      )
+                    : Image.file(
+                        File(room.thumbnailUrl),
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) => Container(
+                          color: const Color(0xFFF3F4F6),
+                          alignment: Alignment.center,
+                          child: const Icon(Icons.broken_image_outlined, size: 40, color: AppTheme.textHint),
+                        ),
                       ),
-                    )
-                  : Image.file(
-                      File(room.thumbnailUrl),
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) => Container(
-                        color: Colors.grey.shade300,
-                        child: const Icon(Icons.broken_image_outlined, size: 40),
-                      ),
-                    ),
+              ),
             ),
             Padding(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -419,47 +678,55 @@ class _RoomCard extends StatelessWidget {
                     room.name,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: GoogleFonts.poppins(
                       fontSize: 16,
                       fontWeight: FontWeight.w700,
+                      color: AppTheme.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Row(
                     children: [
-                      const Icon(Icons.location_on_outlined, size: 16, color: Colors.grey),
+                      const Icon(Icons.location_on_outlined, size: 16, color: AppTheme.textSecondary),
                       const SizedBox(width: 4),
                       Expanded(
                         child: Text(
                           room.city,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(color: Colors.grey),
+                          style: GoogleFonts.dmSans(color: AppTheme.textSecondary),
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    '${currencyFormat.format(room.pricePerNight)} / đêm',
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      color: AppTheme.primary,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 12),
                   Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Icon(Icons.star, color: Colors.amber, size: 18),
-                      const SizedBox(width: 4),
                       Text(
-                        room.rating.toStringAsFixed(1),
-                        style: const TextStyle(fontWeight: FontWeight.w600),
+                        '${currencyFormat.format(room.pricePerNight)} / đêm',
+                        style: GoogleFonts.poppins(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          color: AppTheme.primary,
+                        ),
                       ),
-                      Text(
-                        ' (${room.reviewCount})',
-                        style: const TextStyle(color: Colors.grey),
+                      Row(
+                        children: [
+                          const Icon(Icons.star_rounded, color: Colors.amber, size: 18),
+                          const SizedBox(width: 4),
+                          Text(
+                            room.rating.toStringAsFixed(1),
+                            style: GoogleFonts.dmSans(
+                              fontWeight: FontWeight.w600,
+                              color: AppTheme.textPrimary,
+                            ),
+                          ),
+                          Text(
+                            ' (${room.reviewCount})',
+                            style: GoogleFonts.dmSans(color: AppTheme.textSecondary, fontSize: 12),
+                          ),
+                        ],
                       ),
                     ],
                   ),

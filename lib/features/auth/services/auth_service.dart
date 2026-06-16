@@ -88,6 +88,7 @@ class AuthService {
     String fullName,
     String phone,
     String? avatarUrl,
+    String email,
   ) async {
     // Normalize phone number to match backend validation regex ^0\d{9}$
     // e.g., "+84 937 209 892" -> "0937209892"
@@ -98,18 +99,26 @@ class AuthService {
       normalizedPhone = '0' + normalizedPhone.substring(2);
     }
 
-    final response = await _dio.put(
-      ApiConstants.profile,
-      data: {
-        'fullName': fullName,
-        'phone': normalizedPhone,
-        if (avatarUrl != null) 'avatarUrl': avatarUrl,
-      },
-    );
-    if (response.data['success'] == true) {
-      return UserModel.fromJson(_extractUserData(response.data));
-    } else {
-      throw Exception(response.data['message'] ?? 'Cập nhật thất bại');
+    try {
+      final response = await _dio.put(
+        ApiConstants.profile,
+        data: {
+          'fullName': fullName,
+          'phone': normalizedPhone,
+          'email': email.trim(),
+          if (avatarUrl != null) 'avatarUrl': avatarUrl,
+        },
+      );
+      if (response.data['success'] == true) {
+        return UserModel.fromJson(_extractUserData(response.data));
+      } else {
+        throw Exception(response.data['message'] ?? 'Cập nhật thất bại');
+      }
+    } on DioException catch (e) {
+      final message = e.response?.data?['message'] ?? e.message ?? 'Cập nhật thất bại';
+      throw Exception(message);
+    } catch (e) {
+      rethrow;
     }
   }
 
