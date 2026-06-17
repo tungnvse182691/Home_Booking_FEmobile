@@ -112,7 +112,18 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Hồ sơ cá nhân', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Image.asset(
+              'assets/images/logo.png',
+              height: 32,
+              fit: BoxFit.contain,
+            ),
+            const SizedBox(width: 8),
+            const Text('Hồ sơ cá nhân', style: TextStyle(fontWeight: FontWeight.bold)),
+          ],
+        ),
       ),
       body: RefreshIndicator(
         onRefresh: () => ref.read(profileProvider.notifier).fetchProfile(),

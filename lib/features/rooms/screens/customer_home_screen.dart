@@ -103,7 +103,18 @@ class _CustomerHomeScreenState extends ConsumerState<CustomerHomeScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('HomeBooking'),
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Image.asset(
+              'assets/images/logo.png',
+              height: 32,
+              fit: BoxFit.contain,
+            ),
+            const SizedBox(width: 8),
+            const Text('StayEase'),
+          ],
+        ),
         actions: [
           IconButton(
             onPressed: () => context.push('/profile'),

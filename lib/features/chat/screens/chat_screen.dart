@@ -111,24 +111,17 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         ),
         title: Row(
           children: [
-            Container(
-              padding: const EdgeInsets.all(6),
-              decoration: BoxDecoration(
-                color: AppTheme.primary.withOpacity(0.1),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.smart_toy_outlined, // Material Symbols Outlined
-                color: AppTheme.primary,
-                size: 20,
-              ),
+            Image.asset(
+              'assets/images/logo.png',
+              height: 28,
+              fit: BoxFit.contain,
             ),
             const SizedBox(width: 10),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Lễ Tân AI',
+                  'StayEase Assistant',
                   style: GoogleFonts.poppins(
                     color: const Color(0xFF111827),
                     fontWeight: FontWeight.bold,
@@ -484,55 +477,80 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
   Widget _buildMessageBubble(ChatMessage message) {
     final isUser = message.role == Role.user;
+    
+    Widget bubble = Container(
+      constraints: BoxConstraints(
+        maxWidth: MediaQuery.of(context).size.width * (isUser ? 0.78 : 0.70),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: isUser ? AppTheme.primary : Colors.white,
+        border: isUser ? null : Border.all(color: const Color(0xFFE5E7EB)),
+        borderRadius: BorderRadius.only(
+          topLeft: const Radius.circular(16),
+          topRight: const Radius.circular(16),
+          bottomLeft: Radius.circular(isUser ? 16 : 4),
+          bottomRight: Radius.circular(isUser ? 4 : 16),
+        ),
+        boxShadow: isUser
+            ? null
+            : [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.02),
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+      ),
+      child: SelectableText(
+        message.content,
+        style: GoogleFonts.dmSans(
+          color: isUser ? Colors.white : const Color(0xFF1F2937),
+          fontSize: 14.5,
+          height: 1.45,
+        ),
+      ),
+    );
+
     return Align(
       alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
       child: Column(
         crossAxisAlignment: isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
         children: [
-          Container(
-            constraints: BoxConstraints(
-              maxWidth: MediaQuery.of(context).size.width * 0.78,
-            ),
-            margin: EdgeInsets.only(
+          Padding(
+            padding: EdgeInsets.only(
               left: isUser ? 48 : 16,
               right: isUser ? 16 : 48,
               top: 4,
               bottom: 4,
             ),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: BoxDecoration(
-              color: isUser ? AppTheme.primary : Colors.white,
-              border: isUser ? null : Border.all(color: const Color(0xFFE5E7EB)),
-              borderRadius: BorderRadius.only(
-                topLeft: const Radius.circular(16),
-                topRight: const Radius.circular(16),
-                bottomLeft: Radius.circular(isUser ? 16 : 4),
-                bottomRight: Radius.circular(isUser ? 4 : 16),
-              ),
-              boxShadow: isUser
-                  ? null
-                  : [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.02),
-                        blurRadius: 4,
-                        offset: const Offset(0, 2),
+            child: isUser
+                ? bubble
+                : Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      CircleAvatar(
+                        radius: 16,
+                        backgroundColor: const Color(0xFFF3F4F6),
+                        child: Padding(
+                          padding: const EdgeInsets.all(4.0),
+                          child: Image.asset(
+                            'assets/images/logo.png',
+                            fit: BoxFit.contain,
+                          ),
+                        ),
                       ),
+                      const SizedBox(width: 8),
+                      Flexible(child: bubble),
                     ],
-            ),
-            child: SelectableText(
-              message.content,
-              style: GoogleFonts.dmSans(
-                color: isUser ? Colors.white : const Color(0xFF1F2937),
-                fontSize: 14.5,
-                height: 1.45,
-              ),
-            ),
+                  ),
           ),
           if (!isUser && message.suggestedRooms != null && message.suggestedRooms!.isNotEmpty)
             _buildSuggestedRoomsList(message.suggestedRooms!),
           Padding(
             padding: EdgeInsets.only(
-              left: isUser ? 0 : 20,
+              left: isUser ? 0 : 56,
               right: isUser ? 20 : 0,
               bottom: 12,
             ),
@@ -555,42 +573,62 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            margin: const EdgeInsets.only(left: 16, top: 4, bottom: 4),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              border: Border.all(color: const Color(0xFFE5E7EB)),
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(16),
-                topRight: Radius.circular(16),
-                bottomRight: Radius.circular(16),
-                bottomLeft: Radius.circular(4),
-              ),
-            ),
+          Padding(
+            padding: const EdgeInsets.only(left: 16, top: 4, bottom: 4),
             child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(
-                  'Đang xử lý',
-                  style: GoogleFonts.dmSans(
-                    color: const Color(0xFF6B7280),
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
+                CircleAvatar(
+                  radius: 16,
+                  backgroundColor: const Color(0xFFF3F4F6),
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: Image.asset(
+                      'assets/images/logo.png',
+                      fit: BoxFit.contain,
+                    ),
                   ),
                 ),
                 const SizedBox(width: 8),
-                LoadingAnimationWidget.threeArchedCircle(
-                  color: AppTheme.primary,
-                  size: 16,
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    border: Border.all(color: const Color(0xFFE5E7EB)),
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(16),
+                      topRight: Radius.circular(16),
+                      bottomRight: Radius.circular(16),
+                      bottomLeft: Radius.circular(4),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'Đang xử lý',
+                        style: GoogleFonts.dmSans(
+                          color: const Color(0xFF6B7280),
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      LoadingAnimationWidget.threeArchedCircle(
+                        color: AppTheme.primary,
+                        size: 16,
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
           ),
           Padding(
-            padding: const EdgeInsets.only(left: 20, bottom: 12),
+            padding: const EdgeInsets.only(left: 56, bottom: 12),
             child: Text(
-              'Lễ Tân AI...',
+              'StayEase Assistant...',
               style: GoogleFonts.dmSans(
                 color: const Color(0xFF9CA3AF),
                 fontSize: 10,

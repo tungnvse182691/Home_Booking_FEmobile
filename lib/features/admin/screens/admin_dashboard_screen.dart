@@ -26,23 +26,35 @@ class AdminDashboardScreen extends ConsumerWidget {
         backgroundColor: AppTheme.background,
         elevation: 0,
         surfaceTintColor: Colors.transparent,
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
-              'Bảng điều khiển',
-              style: GoogleFonts.poppins(
-                fontWeight: FontWeight.w700,
-                fontSize: 20,
-                color: AppTheme.textPrimary,
-              ),
+            Image.asset(
+              'assets/images/logo.png',
+              height: 32,
+              fit: BoxFit.contain,
             ),
-            Text(
-              'Tổng quan hệ thống',
-              style: GoogleFonts.dmSans(
-                fontSize: 12,
-                color: AppTheme.textSecondary,
-              ),
+            const SizedBox(width: 8),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Bảng điều khiển',
+                  style: GoogleFonts.poppins(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 20,
+                    color: AppTheme.textPrimary,
+                  ),
+                ),
+                Text(
+                  'Tổng quan hệ thống',
+                  style: GoogleFonts.dmSans(
+                    fontSize: 12,
+                    color: AppTheme.textSecondary,
+                  ),
+                ),
+              ],
             ),
           ],
         ),

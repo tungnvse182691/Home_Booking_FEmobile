@@ -48,13 +48,24 @@ class _AdminPaymentsScreenState extends ConsumerState<AdminPaymentsScreen> {
         elevation: 0,
         surfaceTintColor: Colors.transparent,
         foregroundColor: AppTheme.textPrimary,
-        title: Text(
-          'Giao dịch',
-          style: GoogleFonts.poppins(
-            fontWeight: FontWeight.w700,
-            fontSize: 18,
-            color: AppTheme.textPrimary,
-          ),
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Image.asset(
+              'assets/images/logo.png',
+              height: 32,
+              fit: BoxFit.contain,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              'Giao dịch',
+              style: GoogleFonts.poppins(
+                fontWeight: FontWeight.w700,
+                fontSize: 18,
+                color: AppTheme.textPrimary,
+              ),
+            ),
+          ],
         ),
         actions: [
           IconButton(

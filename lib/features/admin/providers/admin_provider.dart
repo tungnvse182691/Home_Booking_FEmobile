@@ -175,16 +175,22 @@ final adminRoomsProvider =
 class AdminRoomsNotifier extends StateNotifier<AsyncValue<List<RoomListItem>>> {
   final RoomService _roomService;
   final HostService _hostService;
+  String? _lastSearchTerm;
 
   AdminRoomsNotifier(this._roomService, this._hostService)
     : super(const AsyncValue.loading()) {
     fetchRooms();
   }
 
-  Future<void> fetchRooms() async {
+  Future<void> fetchRooms({String? searchTerm}) async {
+    _lastSearchTerm = searchTerm;
     state = const AsyncValue.loading();
     try {
-      final result = await _roomService.getRooms(pageNumber: 1, pageSize: 100);
+      final result = await _roomService.getRooms(
+        searchTerm: searchTerm,
+        pageNumber: 1,
+        pageSize: 100,
+      );
       state = AsyncValue.data(result.items);
     } catch (e, stack) {
       state = AsyncValue.error(e, stack);
@@ -193,6 +199,6 @@ class AdminRoomsNotifier extends StateNotifier<AsyncValue<List<RoomListItem>>> {
 
   Future<void> deleteRoom(String id) async {
     await _hostService.deleteRoom(id);
-    await fetchRooms();
+    await fetchRooms(searchTerm: _lastSearchTerm);
   }
 }

@@ -15,9 +15,20 @@ class NotificationScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          'Thông báo',
-          style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Image.asset(
+              'assets/images/logo.png',
+              height: 32,
+              fit: BoxFit.contain,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              'Thông báo',
+              style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
+            ),
+          ],
         ),
       ),
       body: RefreshIndicator(

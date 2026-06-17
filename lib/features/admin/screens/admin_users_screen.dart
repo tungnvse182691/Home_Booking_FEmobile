@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -18,6 +19,7 @@ class _AdminUsersScreenState extends ConsumerState<AdminUsersScreen> {
   final _searchController = TextEditingController();
   String _selectedRole = '';
   String _selectedStatus = '';
+  Timer? _searchDebounce;
 
   @override
   void initState() {
@@ -28,6 +30,7 @@ class _AdminUsersScreenState extends ConsumerState<AdminUsersScreen> {
 
   @override
   void dispose() {
+    _searchDebounce?.cancel();
     _searchController.dispose();
     super.dispose();
   }
@@ -42,6 +45,14 @@ class _AdminUsersScreenState extends ConsumerState<AdminUsersScreen> {
     );
   }
 
+  void _onSearchChanged(String v) {
+    setState(() {});
+    _searchDebounce?.cancel();
+    _searchDebounce = Timer(const Duration(milliseconds: 350), () {
+      _applyFilter();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final usersAsync = ref.watch(adminUsersProvider);
@@ -50,9 +61,20 @@ class _AdminUsersScreenState extends ConsumerState<AdminUsersScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F6FA),
       appBar: AppBar(
-        title: const Text(
-          'Quản lý người dùng',
-          style: TextStyle(fontWeight: FontWeight.bold),
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Image.asset(
+              'assets/images/logo.png',
+              height: 32,
+              fit: BoxFit.contain,
+            ),
+            const SizedBox(width: 8),
+            const Text(
+              'Quản lý người dùng',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ],
         ),
         backgroundColor: Colors.white,
         foregroundColor: Colors.black87,
@@ -85,8 +107,10 @@ class _AdminUsersScreenState extends ConsumerState<AdminUsersScreen> {
                         ? IconButton(
                             icon: const Icon(Icons.clear, size: 18),
                             onPressed: () {
+                              _searchDebounce?.cancel();
                               _searchController.clear();
                               _applyFilter();
+                              setState(() {});
                             },
                           )
                         : null,
@@ -113,11 +137,11 @@ class _AdminUsersScreenState extends ConsumerState<AdminUsersScreen> {
                       vertical: 10,
                     ),
                   ),
-                  onSubmitted: (_) => _applyFilter(),
-                  onChanged: (v) {
-                    setState(() {});
-                    if (v.isEmpty) _applyFilter();
+                  onSubmitted: (_) {
+                    _searchDebounce?.cancel();
+                    _applyFilter();
                   },
+                  onChanged: _onSearchChanged,
                 ),
                 const SizedBox(height: 10),
                 // Filter dropdowns

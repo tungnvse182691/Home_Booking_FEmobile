@@ -63,9 +63,20 @@ class _BookingHistoryScreenState extends ConsumerState<BookingHistoryScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          'Lịch sử đặt phòng',
-          style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Image.asset(
+              'assets/images/logo.png',
+              height: 32,
+              fit: BoxFit.contain,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              'Lịch sử đặt phòng',
+              style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
+            ),
+          ],
         ),
       ),
       body: RefreshIndicator(

@@ -142,26 +142,12 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   Center(
                     child: Column(
                       children: [
-                        Container(
-                          width: 64,
-                          height: 64,
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(18),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.15),
-                                blurRadius: 20,
-                                offset: const Offset(0, 8),
-                              ),
-                            ],
-                          ),
-                          child: const Center(
-                            child: Icon(
-                              Icons.home_rounded,
-                              size: 36,
-                              color: AppTheme.primary,
-                            ),
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(20),
+                          child: Image.asset(
+                            'assets/images/logo.png',
+                            height: 100,
+                            fit: BoxFit.contain,
                           ),
                         ),
                         const SizedBox(height: 12),

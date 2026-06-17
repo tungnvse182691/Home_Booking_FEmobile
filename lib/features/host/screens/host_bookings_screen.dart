@@ -59,13 +59,24 @@ class _HostBookingsScreenState extends ConsumerState<HostBookingsScreen>
         backgroundColor: AppTheme.background,
         elevation: 0,
         surfaceTintColor: Colors.transparent,
-        title: Text(
-          'Quản lý đặt phòng',
-          style: GoogleFonts.poppins(
-            fontWeight: FontWeight.w700,
-            fontSize: 20,
-            color: AppTheme.textPrimary,
-          ),
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Image.asset(
+              'assets/images/logo.png',
+              height: 32,
+              fit: BoxFit.contain,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              'Quản lý đặt phòng',
+              style: GoogleFonts.poppins(
+                fontWeight: FontWeight.w700,
+                fontSize: 20,
+                color: AppTheme.textPrimary,
+              ),
+            ),
+          ],
         ),
         actions: [
           IconButton(
