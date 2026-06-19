@@ -232,8 +232,6 @@ class RoomDetailScreen extends ConsumerWidget {
           ],
         ),
         const SizedBox(height: 16),
-        RatingSummary(rating: rating, totalReviews: count),
-        const SizedBox(height: 24),
         reviewsAsync.when(
           loading: () => const Center(child: CircularProgressIndicator()),
           error: (err, stack) => Text('Không thể tải đánh giá: $err'),
@@ -246,7 +244,10 @@ class RoomDetailScreen extends ConsumerWidget {
             }
             final topReviews = reviews.take(3).toList();
             return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                RatingSummary(reviews: reviews),
+                const SizedBox(height: 24),
                 ...topReviews.map((review) => _buildReviewItem(review)),
               ],
             );
