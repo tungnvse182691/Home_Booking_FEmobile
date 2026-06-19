@@ -9,11 +9,71 @@ import '../providers/host_provider.dart';
 import '../models/host_model.dart';
 import '../../../utils/app_theme.dart';
 
-class HostRoomsScreen extends ConsumerWidget {
+class HostRoomsScreen extends ConsumerStatefulWidget {
   const HostRoomsScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<HostRoomsScreen> createState() => _HostRoomsScreenState();
+}
+
+class _HostRoomsScreenState extends ConsumerState<HostRoomsScreen> {
+  final _searchController = TextEditingController();
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  Widget _buildEmptyState(bool isSearching) {
+    return SingleChildScrollView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      child: SizedBox(
+        height: MediaQuery.of(context).size.height * 0.6,
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                isSearching ? Icons.search_off_rounded : Icons.home_outlined,
+                size: 72,
+                color: AppTheme.textHint,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                isSearching ? 'Không tìm thấy phòng phù hợp' : 'Bạn chưa có phòng nào',
+                style: GoogleFonts.poppins(
+                  color: AppTheme.textPrimary,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                isSearching
+                    ? 'Thử tìm kiếm với từ khóa khác hoặc xóa bộ lọc'
+                    : 'Nhấn nút bên dưới để tạo phòng mới',
+                style: GoogleFonts.dmSans(color: AppTheme.textSecondary, fontSize: 13),
+              ),
+              if (isSearching) ...[
+                const SizedBox(height: 16),
+                TextButton(
+                  onPressed: () {
+                    _searchController.clear();
+                    setState(() {});
+                  },
+                  child: const Text('Xóa bộ lọc'),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final roomsAsync = ref.watch(hostRoomsProvider);
     final currencyFormat = NumberFormat.currency(
       locale: 'vi_VN',
@@ -54,86 +114,151 @@ class HostRoomsScreen extends ConsumerWidget {
           ),
         ],
       ),
-      body: RefreshIndicator(
-        color: AppTheme.primary,
-        onRefresh: () => ref.read(hostRoomsProvider.notifier).fetchRooms(),
-        child: roomsAsync.when(
-          loading: () => const Center(
-            child: CircularProgressIndicator(color: AppTheme.primary),
-          ),
-          error: (err, stack) => Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(Icons.error_outline_rounded, size: 56, color: Color(0xFFE57373)),
-                const SizedBox(height: 12),
-                Text(
-                  'Có lỗi xảy ra',
-                  style: GoogleFonts.poppins(fontWeight: FontWeight.w600, color: AppTheme.textPrimary),
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+            child: Container(
+              decoration: BoxDecoration(
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.04),
+                    blurRadius: 16,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: TextField(
+                controller: _searchController,
+                style: GoogleFonts.dmSans(
+                  fontSize: 14,
+                  color: AppTheme.textPrimary,
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  err.toString(),
-                  style: GoogleFonts.dmSans(color: AppTheme.textSecondary, fontSize: 13),
-                  textAlign: TextAlign.center,
+                decoration: InputDecoration(
+                  hintText: 'Tìm kiếm phòng...',
+                  hintStyle: GoogleFonts.dmSans(color: AppTheme.textHint, fontSize: 14),
+                  prefixIcon: const Icon(Icons.search, size: 20, color: AppTheme.textSecondary),
+                  suffixIcon: _searchController.text.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.clear, size: 18, color: AppTheme.textSecondary),
+                          onPressed: () {
+                            _searchController.clear();
+                            setState(() {});
+                          },
+                        )
+                      : null,
+                  filled: true,
+                  fillColor: Colors.white,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide.none,
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide.none,
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: const BorderSide(
+                      color: AppTheme.primary,
+                      width: 1.5,
+                    ),
+                  ),
+                  isDense: true,
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
                 ),
-                const SizedBox(height: 20),
-                ElevatedButton.icon(
-                  onPressed: () => ref.read(hostRoomsProvider.notifier).fetchRooms(),
-                  icon: const Icon(Icons.refresh_rounded),
-                  label: const Text('Thử lại'),
-                ),
-              ],
+                onChanged: (value) {
+                  setState(() {});
+                },
+              ),
             ),
           ),
-          data: (rooms) => rooms.isEmpty
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(Icons.home_outlined, size: 72, color: AppTheme.textHint),
-                      const SizedBox(height: 16),
-                      Text(
-                        'Bạn chưa có phòng nào',
-                        style: GoogleFonts.poppins(
-                          color: AppTheme.textPrimary,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Nhấn nút bên dưới để tạo phòng mới',
-                        style: GoogleFonts.dmSans(color: AppTheme.textSecondary, fontSize: 13),
-                      ),
-                    ],
-                  ),
-                )
-              : AnimationLimiter(
-                  child: ListView.builder(
-                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
-                    itemCount: rooms.length,
-                    itemBuilder: (context, index) {
-                      final room = rooms[index];
-                      return AnimationConfiguration.staggeredList(
-                        position: index,
-                        duration: const Duration(milliseconds: 375),
-                        child: SlideAnimation(
-                          verticalOffset: 30.0,
-                          child: FadeInAnimation(
-                            child: _buildRoomCard(
-                              context,
-                              ref,
-                              room,
-                              currencyFormat,
-                            ),
+          Expanded(
+            child: RefreshIndicator(
+              color: AppTheme.primary,
+              onRefresh: () => ref.read(hostRoomsProvider.notifier).fetchRooms(),
+              child: roomsAsync.when(
+                loading: () => const Center(
+                  child: CircularProgressIndicator(color: AppTheme.primary),
+                ),
+                error: (err, stack) => SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  child: SizedBox(
+                    height: MediaQuery.of(context).size.height * 0.6,
+                    child: Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.error_outline_rounded, size: 56, color: Color(0xFFE57373)),
+                          const SizedBox(height: 12),
+                          Text(
+                            'Có lỗi xảy ra',
+                            style: GoogleFonts.poppins(fontWeight: FontWeight.w600, color: AppTheme.textPrimary),
                           ),
-                        ),
-                      );
-                    },
+                          const SizedBox(height: 8),
+                          Text(
+                            err.toString(),
+                            style: GoogleFonts.dmSans(color: AppTheme.textSecondary, fontSize: 13),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 20),
+                          ElevatedButton.icon(
+                            onPressed: () => ref.read(hostRoomsProvider.notifier).fetchRooms(),
+                            icon: const Icon(Icons.refresh_rounded),
+                            label: const Text('Thử lại'),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
                 ),
-        ),
+                data: (rooms) {
+                  final query = _searchController.text.trim().toLowerCase();
+                  final filteredRooms = query.isEmpty
+                      ? rooms
+                      : rooms.where((room) {
+                          final nameMatch = room.name.toLowerCase().contains(query);
+                          final cityMatch = room.city.toLowerCase().contains(query);
+                          return nameMatch || cityMatch;
+                        }).toList();
+
+                  if (filteredRooms.isEmpty) {
+                    return _buildEmptyState(query.isNotEmpty);
+                  }
+
+                  return AnimationLimiter(
+                    child: ListView.builder(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+                      itemCount: filteredRooms.length,
+                      itemBuilder: (context, index) {
+                        final room = filteredRooms[index];
+                        return AnimationConfiguration.staggeredList(
+                          position: index,
+                          duration: const Duration(milliseconds: 375),
+                          child: SlideAnimation(
+                            verticalOffset: 30.0,
+                            child: FadeInAnimation(
+                              child: _buildRoomCard(
+                                context,
+                                ref,
+                                room,
+                                currencyFormat,
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  );
+                },
+              ),
+            ),
+          ),
+        ],
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => context.push('/create-room'),
