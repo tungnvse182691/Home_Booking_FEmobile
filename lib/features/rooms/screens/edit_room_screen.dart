@@ -213,6 +213,83 @@ class _EditRoomScreenState extends ConsumerState<EditRoomScreen> {
     }
   }
 
+  Widget _buildCounterRow({
+    required String title,
+    required String subtitle,
+    required TextEditingController controller,
+  }) {
+    final val = int.tryParse(controller.text) ?? 1;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: GoogleFonts.poppins(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                    color: AppTheme.textPrimary,
+                  ),
+                ),
+                Text(
+                  subtitle,
+                  style: GoogleFonts.dmSans(
+                    fontSize: 11,
+                    color: AppTheme.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Container(
+            decoration: BoxDecoration(
+              color: const Color(0xFFF3F4F6),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.remove_rounded, size: 18, color: AppTheme.textPrimary),
+                  onPressed: val > 1
+                      ? () {
+                          controller.text = (val - 1).toString();
+                          setState(() {});
+                        }
+                      : null,
+                ),
+                SizedBox(
+                  width: 32,
+                  child: Text(
+                    '$val',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.poppins(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 15,
+                      color: AppTheme.textPrimary,
+                    ),
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.add_rounded, size: 18, color: AppTheme.textPrimary),
+                  onPressed: () {
+                    controller.text = (val + 1).toString();
+                    setState(() {});
+                  },
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   // ── Step 1: Thông tin cơ bản ─────────────────────────────────────────────
   Widget _buildStep1() {
     return Form(
@@ -220,16 +297,32 @@ class _EditRoomScreenState extends ConsumerState<EditRoomScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Thông tin cơ bản',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold, color: AppTheme.textPrimary),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 20),
           TextFormField(
             controller: _nameController,
-            decoration: const InputDecoration(
+            style: GoogleFonts.dmSans(fontSize: 14, color: AppTheme.textPrimary),
+            decoration: InputDecoration(
               labelText: 'Tên phòng *',
-              border: OutlineInputBorder(),
+              labelStyle: GoogleFonts.dmSans(color: AppTheme.textSecondary, fontSize: 14),
+              filled: true,
+              fillColor: const Color(0xFFF3F4F6),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: AppTheme.primary, width: 1.5),
+              ),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             ),
             validator: (v) => (v == null || v.trim().isEmpty)
                 ? 'Vui lòng nhập tên phòng'
@@ -239,19 +332,52 @@ class _EditRoomScreenState extends ConsumerState<EditRoomScreen> {
           TextFormField(
             controller: _descController,
             maxLines: 4,
-            decoration: const InputDecoration(
+            style: GoogleFonts.dmSans(fontSize: 14, color: AppTheme.textPrimary),
+            decoration: InputDecoration(
               labelText: 'Mô tả',
-              border: OutlineInputBorder(),
+              labelStyle: GoogleFonts.dmSans(color: AppTheme.textSecondary, fontSize: 14),
+              filled: true,
+              fillColor: const Color(0xFFF3F4F6),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: AppTheme.primary, width: 1.5),
+              ),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             ),
           ),
           const SizedBox(height: 16),
           TextFormField(
             controller: _priceController,
             keyboardType: TextInputType.number,
-            decoration: const InputDecoration(
+            style: GoogleFonts.dmSans(fontSize: 14, color: AppTheme.textPrimary),
+            decoration: InputDecoration(
               labelText: 'Giá/đêm *',
+              labelStyle: GoogleFonts.dmSans(color: AppTheme.textSecondary, fontSize: 14),
               suffixText: 'đ',
-              border: OutlineInputBorder(),
+              suffixStyle: GoogleFonts.dmSans(color: AppTheme.primary, fontWeight: FontWeight.bold),
+              filled: true,
+              fillColor: const Color(0xFFF3F4F6),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: AppTheme.primary, width: 1.5),
+              ),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             ),
             validator: (v) {
               if (v == null || v.trim().isEmpty) return 'Nhập giá';
@@ -260,42 +386,28 @@ class _EditRoomScreenState extends ConsumerState<EditRoomScreen> {
               return null;
             },
           ),
+          const SizedBox(height: 24),
+          const Divider(height: 1, color: Color(0xFFEEEEEE)),
           const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: TextFormField(
-                  controller: _maxGuestsController,
-                  keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(
-                    labelText: 'Số khách tối đa',
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: TextFormField(
-                  controller: _bedroomsController,
-                  keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(
-                    labelText: 'Phòng ngủ',
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: TextFormField(
-                  controller: _bathroomsController,
-                  keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(
-                    labelText: 'Phòng tắm',
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-              ),
-            ],
+          Text(
+            'Cấu trúc & Sức chứa',
+            style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold, color: AppTheme.textPrimary),
+          ),
+          const SizedBox(height: 12),
+          _buildCounterRow(
+            title: 'Số khách tối đa',
+            subtitle: 'Số lượng khách homestay có thể đón tiếp',
+            controller: _maxGuestsController,
+          ),
+          _buildCounterRow(
+            title: 'Phòng ngủ',
+            subtitle: 'Số lượng phòng ngủ có sẵn',
+            controller: _bedroomsController,
+          ),
+          _buildCounterRow(
+            title: 'Phòng tắm',
+            subtitle: 'Số lượng phòng vệ sinh / phòng tắm',
+            controller: _bathroomsController,
           ),
         ],
       ),
