@@ -14,7 +14,7 @@ class HistoryScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final historyState = ref.watch(historyProvider);
     
-    final upcoming = historyState.bookings.where((b) => b.status == BookingStatus.CONFIRMED).toList();
+    final upcoming = historyState.bookings.where((b) => b.status == BookingStatus.CONFIRMED || b.status == BookingStatus.PENDING).toList();
     final completed = historyState.bookings.where((b) => b.status == BookingStatus.COMPLETED).toList();
     final canceled = historyState.bookings.where((b) => b.status == BookingStatus.CANCELED).toList();
 
