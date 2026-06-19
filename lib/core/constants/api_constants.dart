@@ -1,9 +1,16 @@
-﻿import 'package:flutter/foundation.dart';
+import 'package:flutter/foundation.dart';
 
 class ApiConstants {
-  // Chrome/Web uses localhost; Android emulator uses 10.0.2.2.
-  static String get baseUrl =>
-      kIsWeb ? 'http://localhost:8080' : 'http://10.0.2.2:8080';
+  // Change this to your deployed Railway domain once you deploy
+  static const String _productionUrl = 'https://your-backend-service.up.railway.app';
+
+  // Set useProduction to true and update productionUrl with your Railway public domain when ready.
+  static const String productionUrl = 'https://homebookingbe-production.up.railway.app';
+  static const bool useProduction = true;
+
+  static String get baseUrl => useProduction 
+      ? productionUrl 
+      : (kIsWeb ? 'http://localhost:8080' : 'http://10.0.2.2:8080');
 
   // Auth
   static const String login = "/api/auth/login";

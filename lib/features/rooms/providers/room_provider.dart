@@ -8,7 +8,7 @@ import '../../review/models/review_model.dart';
 export 'room_list_provider.dart' show roomFilterProvider;
 
 // --- Provider cho Chi tiết phòng ---
-final roomDetailProvider = FutureProvider.family<RoomDetail, String>((
+final roomDetailProvider = FutureProvider.autoDispose.family<RoomDetail, String>((
   ref,
   id,
 ) async {
@@ -16,7 +16,7 @@ final roomDetailProvider = FutureProvider.family<RoomDetail, String>((
   return await roomService.getRoomDetail(id);
 });
 
-final roomReviewsProvider = FutureProvider.family<List<ReviewModel>, String>((
+final roomReviewsProvider = FutureProvider.autoDispose.family<List<ReviewModel>, String>((
   ref,
   roomId,
 ) async {
