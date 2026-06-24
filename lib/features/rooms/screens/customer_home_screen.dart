@@ -49,6 +49,19 @@ class _CustomerHomeScreenState extends ConsumerState<CustomerHomeScreen> {
   void initState() {
     super.initState();
     _scrollController.addListener(_onScroll);
+    // Đặt lại thanh tìm kiếm và bộ lọc mỗi khi màn hình được khởi tạo
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _searchController.clear();
+      setState(() {
+        _selectedCity = '';
+        _selectedRoomTypeId = '';
+        _selectedAmenities.clear();
+        _minPrice = _minRoomPrice;
+        _maxPrice = _maxRoomPrice;
+      });
+      // Tải lại danh sách phòng không có bộ lọc
+      ref.read(roomListProvider.notifier).applyFilters(RoomListFilter());
+    });
   }
 
   @override
@@ -659,25 +672,31 @@ class _RoomCard extends StatelessWidget {
               tag: 'room_image_${room.roomId}',
               child: AspectRatio(
                 aspectRatio: 16 / 9,
-                child: room.thumbnailUrl.startsWith('http')
-                    ? Image.network(
-                        room.thumbnailUrl,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) => Container(
-                          color: const Color(0xFFF3F4F6),
-                          alignment: Alignment.center,
-                          child: const Icon(Icons.broken_image_outlined, size: 40, color: AppTheme.textHint),
-                        ),
+                child: room.thumbnailUrl.isEmpty
+                    ? Container(
+                        color: const Color(0xFFF3F4F6),
+                        alignment: Alignment.center,
+                        child: const Icon(Icons.home_outlined, size: 48, color: AppTheme.textHint),
                       )
-                    : Image.file(
-                        File(room.thumbnailUrl),
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) => Container(
-                          color: const Color(0xFFF3F4F6),
-                          alignment: Alignment.center,
-                          child: const Icon(Icons.broken_image_outlined, size: 40, color: AppTheme.textHint),
-                        ),
-                      ),
+                    : room.thumbnailUrl.startsWith('http')
+                        ? Image.network(
+                            room.thumbnailUrl,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) => Container(
+                              color: const Color(0xFFF3F4F6),
+                              alignment: Alignment.center,
+                              child: const Icon(Icons.broken_image_outlined, size: 40, color: AppTheme.textHint),
+                            ),
+                          )
+                        : Image.file(
+                            File(room.thumbnailUrl),
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) => Container(
+                              color: const Color(0xFFF3F4F6),
+                              alignment: Alignment.center,
+                              child: const Icon(Icons.broken_image_outlined, size: 40, color: AppTheme.textHint),
+                            ),
+                          ),
               ),
             ),
             Padding(

@@ -41,7 +41,7 @@ final adminUsersFilterProvider = StateProvider<AdminUsersFilter>(
 );
 
 final adminUsersProvider =
-    StateNotifierProvider<AdminUsersNotifier, AsyncValue<List<AdminUserItem>>>((
+    StateNotifierProvider.autoDispose<AdminUsersNotifier, AsyncValue<List<AdminUserItem>>>((
       ref,
     ) {
       return AdminUsersNotifier(ref.watch(adminServiceProvider));
@@ -124,7 +124,7 @@ final adminPaymentsFilterProvider = StateProvider<AdminPaymentsFilter>(
 );
 
 final adminPaymentsProvider =
-    StateNotifierProvider<
+    StateNotifierProvider.autoDispose<
       AdminPaymentsNotifier,
       AsyncValue<List<AdminPaymentItem>>
     >((ref) {
@@ -164,7 +164,7 @@ final adminRevenueProvider = FutureProvider<List<RevenueReportItem>>((
 /// Admin dùng public GET /api/rooms (không có admin-specific endpoint ở BE).
 /// Xóa phòng dùng DELETE /api/host/rooms/{id} (BE cho phép ADMIN gọi endpoint này).
 final adminRoomsProvider =
-    StateNotifierProvider<AdminRoomsNotifier, AsyncValue<List<RoomListItem>>>((
+    StateNotifierProvider.autoDispose<AdminRoomsNotifier, AsyncValue<List<RoomListItem>>>((
       ref,
     ) {
       final roomService = ref.watch(roomServiceProvider);

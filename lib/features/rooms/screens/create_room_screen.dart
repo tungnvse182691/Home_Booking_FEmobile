@@ -8,6 +8,7 @@ import '../providers/room_list_provider.dart';
 import '../models/room_model.dart';
 import '../widgets/step_indicator.dart';
 import '../widgets/image_picker_grid.dart';
+import '../../host/providers/host_provider.dart';
 
 class CreateRoomScreen extends ConsumerStatefulWidget {
   const CreateRoomScreen({super.key});
@@ -618,6 +619,7 @@ class _CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
     // Step 3 → submit
     final success = await notifier.submit();
     if (success && mounted) {
+      ref.read(hostRoomsProvider.notifier).fetchRooms();
       Navigator.pop(context);
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(

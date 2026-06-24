@@ -145,7 +145,8 @@ class CreateRoomNotifier extends StateNotifier<CreateRoomState> {
       district: district ?? state.district,
       ward: ward ?? state.ward,
       areaName: areaName ?? state.areaName,
-      roomTypeId: roomTypeId ?? state.roomTypeId,
+      // Chỉ cập nhật roomTypeId khi giá trị mới không phải null VÀ không rỗng
+      roomTypeId: (roomTypeId != null && roomTypeId.isNotEmpty) ? roomTypeId : state.roomTypeId,
       isFeatured: isFeatured ?? state.isFeatured,
     );
   }
@@ -250,18 +251,15 @@ class CreateRoomNotifier extends StateNotifier<CreateRoomState> {
             .toList(),
       };
 
-      // roomTypeId chỉ cần khi CREATE (UpdateRoomRequest không có field này)
-      if (!isEdit) {
-        final rtId = int.tryParse(state.roomTypeId);
-        if (rtId == null || rtId <= 0) {
-          state = state.copyWith(
-            isLoading: false,
-            error: 'Vui lòng chọn loại phòng',
-          );
-          return false;
-        }
-        body["roomTypeId"] = rtId;
+      final rtId = int.tryParse(state.roomTypeId);
+      if (rtId == null || rtId <= 0) {
+        state = state.copyWith(
+          isLoading: false,
+          error: 'Vui lòng chọn loại phòng',
+        );
+        return false;
       }
+      body["roomTypeId"] = rtId;
 
       if (isEdit) {
         await dio.put('${ApiConstants.hostRooms}/${state.roomId}', data: body);
@@ -279,6 +277,6 @@ class CreateRoomNotifier extends StateNotifier<CreateRoomState> {
 }
 
 final createRoomProvider =
-    StateNotifierProvider<CreateRoomNotifier, CreateRoomState>((ref) {
+    StateNotifierProvider.autoDispose<CreateRoomNotifier, CreateRoomState>((ref) {
       return CreateRoomNotifier(ref);
     });

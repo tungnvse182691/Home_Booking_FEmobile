@@ -56,10 +56,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         backgroundColor: Colors.white,
         elevation: 0,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.map_outlined, color: AppTheme.primary),
-            onPressed: () => context.push('/map'), // Giả định có route /map
-          ),
           const SizedBox(width: 8),
         ],
       ),

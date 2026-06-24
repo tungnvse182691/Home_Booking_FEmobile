@@ -10,6 +10,8 @@ import '../providers/room_provider.dart';
 import '../providers/room_list_provider.dart';
 import '../widgets/image_picker_grid.dart';
 import '../widgets/step_indicator.dart';
+import '../../admin/providers/admin_provider.dart';
+import '../../host/providers/host_provider.dart';
 
 class EditRoomScreen extends ConsumerStatefulWidget {
   final String roomId;
@@ -39,6 +41,8 @@ class _EditRoomScreenState extends ConsumerState<EditRoomScreen> {
   late final TextEditingController _wardController;
   late final TextEditingController _areaController;
   bool _prefilled = false;
+  String _prefilledRoomId = '';
+  bool _userChangedRoomType = false; // True khi user tự chọn loại phòng, không ghi đè lại
 
   @override
   void initState() {
@@ -54,13 +58,16 @@ class _EditRoomScreenState extends ConsumerState<EditRoomScreen> {
     _districtController = TextEditingController();
     _wardController = TextEditingController();
     _areaController = TextEditingController();
+  }
 
-    // Reset createRoomProvider state khi mở màn hình edit
-    Future.microtask(() {
-      if (mounted) {
-        ref.read(createRoomProvider.notifier).reset();
-      }
-    });
+  @override
+  void didUpdateWidget(covariant EditRoomScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.roomId != widget.roomId) {
+      _prefilled = false;
+      _prefilledRoomId = '';
+      _userChangedRoomType = false;
+    }
   }
 
   @override
@@ -80,13 +87,41 @@ class _EditRoomScreenState extends ConsumerState<EditRoomScreen> {
   }
 
   /// Prefill controllers và provider state từ dữ liệu phòng.
-  /// Dùng Future.microtask để tránh modify provider during build.
-  void _schedulePrefill(RoomDetail room) {
-    if (_prefilled) return;
+  /// Chỉ prefill khi roomId thay đổi hoặc chưa prefill cho room này.
+  /// Khi roomTypes load sau, tự động cập nhật lại roomTypeId.
+  void _schedulePrefill(RoomDetail room, List<RoomType> roomTypes) {
+    final isNewRoom = !_prefilled || _prefilledRoomId != room.roomId;
+
+    if (!isNewRoom) {
+      // Đã prefill room này rồi
+      // Chỉ cập nhật roomTypeId nếu chưa resolve được VÀ user chưa tự chọn
+      if (!_userChangedRoomType && roomTypes.isNotEmpty) {
+        final resolved = _resolveRoomTypeId(room.roomType, roomTypes);
+        if (resolved.isNotEmpty) {
+          final currentState = ref.read(createRoomProvider);
+          if (currentState.roomTypeId.isEmpty) {
+            Future.microtask(() {
+              if (!mounted) return;
+              ref.read(createRoomProvider.notifier).updateField(roomTypeId: resolved);
+            });
+          }
+        }
+      }
+      return;
+    }
+
+    // Room mới hoặc lần đầu prefill — reset flag user-changed
     _prefilled = true;
+    _prefilledRoomId = room.roomId;
+    _userChangedRoomType = false;
 
     Future.microtask(() {
       if (!mounted) return;
+
+      // Reset provider state trước khi điền dữ liệu mới
+      final notifier = ref.read(createRoomProvider.notifier);
+      notifier.reset();
+      notifier.setStep(1);
 
       // Fill text controllers
       _nameController.text = room.name;
@@ -102,7 +137,6 @@ class _EditRoomScreenState extends ConsumerState<EditRoomScreen> {
       _areaController.text = room.areaName ?? '';
 
       // Fill provider state
-      final notifier = ref.read(createRoomProvider.notifier);
       notifier.setRoomId(widget.roomId);
       notifier.setIsAdmin(widget.isAdmin);
       notifier.updateField(
@@ -116,7 +150,7 @@ class _EditRoomScreenState extends ConsumerState<EditRoomScreen> {
         district: room.district ?? '',
         ward: room.ward ?? '',
         areaName: room.areaName ?? '',
-        roomTypeId: _resolveRoomTypeId(room.roomType),
+        roomTypeId: _resolveRoomTypeId(room.roomType, roomTypes),
       );
       notifier.setAddress(room.address);
       notifier.setLocation(room.lat, room.lng);
@@ -125,17 +159,16 @@ class _EditRoomScreenState extends ConsumerState<EditRoomScreen> {
       final existingUrls = room.images.where((u) => u.isNotEmpty).toList();
       if (existingUrls.isNotEmpty) notifier.setImageUrls(existingUrls);
 
-      // Set amenities — each toggleAmenity call is safe inside microtask
+      // Set amenities
       for (final amenity in room.amenities) {
         notifier.toggleAmenity(amenity.amenityId);
       }
     });
   }
 
-  String _resolveRoomTypeId(String roomTypeName) {
-    final roomTypes = ref.read(roomTypesProvider).valueOrNull ?? const [];
+  String _resolveRoomTypeId(String roomTypeName, List<RoomType> roomTypes) {
     for (final rt in roomTypes) {
-      if (rt.name == roomTypeName) return rt.roomTypeId;
+      if (rt.name.trim().toLowerCase() == roomTypeName.trim().toLowerCase()) return rt.roomTypeId;
     }
     return '';
   }
@@ -145,6 +178,7 @@ class _EditRoomScreenState extends ConsumerState<EditRoomScreen> {
     final roomAsync = ref.watch(roomDetailProvider(widget.roomId));
     // Watch at top-level to avoid "modify during build"
     final amenities = ref.watch(amenitiesProvider).value ?? [];
+    final roomTypes = ref.watch(roomTypesProvider).value ?? [];
 
     return roomAsync.when(
       loading: () =>
@@ -160,7 +194,7 @@ class _EditRoomScreenState extends ConsumerState<EditRoomScreen> {
       ),
       data: (room) {
         // Schedule prefill outside build — no modify during build
-        _schedulePrefill(room);
+        _schedulePrefill(room, roomTypes);
 
         final state = ref.watch(createRoomProvider);
         final notifier = ref.read(createRoomProvider.notifier);
@@ -186,7 +220,7 @@ class _EditRoomScreenState extends ConsumerState<EditRoomScreen> {
               Expanded(
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.all(24),
-                  child: _buildStepContent(state, notifier, amenities),
+                  child: _buildStepContent(state, notifier, amenities, roomTypes),
                 ),
               ),
               _buildBottomAction(state, notifier),
@@ -201,10 +235,11 @@ class _EditRoomScreenState extends ConsumerState<EditRoomScreen> {
     CreateRoomState state,
     CreateRoomNotifier notifier,
     List<Amenity> amenities,
+    List<RoomType> roomTypes,
   ) {
     switch (state.currentStep) {
       case 1:
-        return _buildStep1();
+        return _buildStep1(state, notifier, roomTypes);
       case 2:
         return _buildStep2();
       case 3:
@@ -292,7 +327,7 @@ class _EditRoomScreenState extends ConsumerState<EditRoomScreen> {
   }
 
   // ── Step 1: Thông tin cơ bản ─────────────────────────────────────────────
-  Widget _buildStep1() {
+  Widget _buildStep1(CreateRoomState state, CreateRoomNotifier notifier, List<RoomType> roomTypes) {
     return Form(
       key: _formKey,
       child: Column(
@@ -353,6 +388,45 @@ class _EditRoomScreenState extends ConsumerState<EditRoomScreen> {
               ),
               contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             ),
+          ),
+          const SizedBox(height: 16),
+          DropdownButtonFormField<String>(
+            value: state.roomTypeId.isEmpty ? null : state.roomTypeId,
+            isExpanded: true,
+            style: GoogleFonts.dmSans(fontSize: 14, color: AppTheme.textPrimary),
+            decoration: InputDecoration(
+              labelText: 'Loại phòng *',
+              labelStyle: GoogleFonts.dmSans(color: AppTheme.textSecondary, fontSize: 14),
+              filled: true,
+              fillColor: const Color(0xFFF3F4F6),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: AppTheme.primary, width: 1.5),
+              ),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            ),
+            items: roomTypes
+                .map(
+                  (e) => DropdownMenuItem(
+                    value: e.roomTypeId,
+                    child: Text(e.name),
+                  ),
+                )
+                .toList(),
+            onChanged: (v) {
+              _userChangedRoomType = true;
+              notifier.updateField(roomTypeId: v);
+            },
+            validator: (v) =>
+                (v == null || v.isEmpty) ? 'Vui lòng chọn loại phòng' : null,
           ),
           const SizedBox(height: 16),
           TextFormField(
@@ -648,6 +722,12 @@ class _EditRoomScreenState extends ConsumerState<EditRoomScreen> {
     // Step 3 → submit
     final success = await notifier.submit();
     if (success && mounted) {
+      ref.invalidate(roomDetailProvider(widget.roomId));
+      if (widget.isAdmin) {
+        ref.read(adminRoomsProvider.notifier).fetchRooms();
+      } else {
+        ref.read(hostRoomsProvider.notifier).fetchRooms();
+      }
       Navigator.pop(context);
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(

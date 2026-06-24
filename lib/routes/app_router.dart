@@ -15,8 +15,6 @@ import '../features/rooms/screens/my_rooms_screen.dart';
 import '../features/rooms/screens/edit_room_screen.dart';
 import '../features/rooms/screens/room_calendar_screen.dart';
 
-import '../features/map/screens/map_screen.dart';
-
 import '../features/booking/screens/payment_screen.dart';
 import '../features/booking/screens/booking_create_screen.dart';
 import '../features/booking/screens/booking_success_screen.dart';
@@ -281,7 +279,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
 
       // Shared/Miscellaneous
-      GoRoute(path: '/map', builder: (context, state) => const MapScreen()),
       GoRoute(
         path: '/edit-profile',
         builder: (context, state) => const EditProfileScreen(),

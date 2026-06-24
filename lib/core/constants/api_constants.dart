@@ -6,7 +6,7 @@ class ApiConstants {
 
   // Set useProduction to true and update productionUrl with your Railway public domain when ready.
   static const String productionUrl = 'https://homebookingbe-production.up.railway.app';
-  static const bool useProduction = true;
+  static const bool useProduction = false;
 
   static String get baseUrl => useProduction 
       ? productionUrl 

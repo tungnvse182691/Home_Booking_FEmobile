@@ -39,6 +39,13 @@ class _ImageCarouselState extends State<ImageCarousel> {
             itemCount: widget.images.length,
             itemBuilder: (context, index) {
               final imgPath = widget.images[index];
+              if (imgPath.isEmpty) {
+                return Container(
+                  color: Colors.grey[200],
+                  alignment: Alignment.center,
+                  child: const Icon(Icons.home_outlined, size: 48, color: Colors.grey),
+                );
+              }
               return imgPath.startsWith('http')
                   ? Image.network(
                       imgPath,
