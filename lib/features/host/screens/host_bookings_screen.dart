@@ -7,6 +7,7 @@ import '../models/host_booking_model.dart';
 import '../providers/host_bookings_provider.dart';
 import '../../../utils/app_theme.dart';
 
+/// Màn hình Quản lý đơn đặt phòng Homestay của Host (Chủ nhà)
 class HostBookingsScreen extends ConsumerStatefulWidget {
   const HostBookingsScreen({super.key});
 
@@ -16,8 +17,9 @@ class HostBookingsScreen extends ConsumerStatefulWidget {
 
 class _HostBookingsScreenState extends ConsumerState<HostBookingsScreen>
     with SingleTickerProviderStateMixin {
-  late TabController _tabController;
+  late TabController _tabController; // Điều khiển chuyển đổi giữa các Tab trạng thái đơn
 
+  // Các Tab trạng thái đơn đặt phòng tương ứng với mã status từ Backend
   static const _tabs = [
     ('Chờ duyệt', 'PENDING'),
     ('Đã xác nhận', 'CONFIRMED'),
@@ -29,6 +31,7 @@ class _HostBookingsScreenState extends ConsumerState<HostBookingsScreen>
   void initState() {
     super.initState();
     _tabController = TabController(length: _tabs.length, vsync: this);
+    // Khi thay đổi Tab -> Tự động gọi API tải danh sách đơn đặt phòng theo status tương ứng
     _tabController.addListener(() {
       if (!_tabController.indexIsChanging) {
         ref
@@ -46,6 +49,7 @@ class _HostBookingsScreenState extends ConsumerState<HostBookingsScreen>
 
   @override
   Widget build(BuildContext context) {
+    // Đọc trạng thái đơn đặt phòng từ hostBookingsProvider của Riverpod
     final bookingsAsync = ref.watch(hostBookingsProvider);
     final currencyFormat = NumberFormat.currency(
       locale: 'vi_VN',
@@ -58,6 +62,7 @@ class _HostBookingsScreenState extends ConsumerState<HostBookingsScreen>
       appBar: AppBar(
         backgroundColor: AppTheme.background,
         elevation: 0,
+
         surfaceTintColor: Colors.transparent,
         title: Row(
           mainAxisSize: MainAxisSize.min,

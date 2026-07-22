@@ -49,9 +49,10 @@ import '../features/admin/screens/admin_payments_screen.dart';
 import '../features/admin/screens/admin_reports_screen.dart';
 import '../features/admin/screens/admin_rooms_screen.dart';
 
+/// Class lưu trữ trạng thái đăng nhập và vai trò (Role) của người dùng hiện tại
 class AuthStatus {
-  final bool isLoggedIn;
-  final String? role;
+  final bool isLoggedIn; // Đã đăng nhập hay chưa (true/false)
+  final String? role;     // Vai trò người dùng: CUSTOMER, HOST, ADMIN
 
   AuthStatus({required this.isLoggedIn, this.role});
 
@@ -67,6 +68,7 @@ class AuthStatus {
   int get hashCode => isLoggedIn.hashCode ^ role.hashCode;
 }
 
+/// Provider theo dõi trạng thái xác thực từ authStateProvider của Riverpod
 final authStatusProvider = Provider<AuthStatus>((ref) {
   final auth = ref.watch(authStateProvider);
   return AuthStatus(
@@ -75,11 +77,13 @@ final authStatusProvider = Provider<AuthStatus>((ref) {
   );
 });
 
+/// Router chính của ứng dụng sử dụng GoRouter kết hợp với Riverpod
 final appRouterProvider = Provider<GoRouter>((ref) {
   final authStatus = ref.watch(authStatusProvider);
 
   return GoRouter(
-    initialLocation: '/home',
+    initialLocation: '/home', // Đường dẫn khởi chạy mặc định
+    // Redirect Guard: Kiểm tra quyền truy cập tuyến đường trước khi chuyển trang
     redirect: (context, state) {
       final isLoggedIn = authStatus.isLoggedIn;
       final role = authStatus.role;
@@ -88,11 +92,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           state.matchedLocation == '/register' ||
           state.matchedLocation == '/forgot-password';
 
+      // 1. Nếu chưa đăng nhập và không phải trang Auth -> Chuyển về màn hình Login
       if (!isLoggedIn) {
         return isAuthPath ? null : '/login';
       }
 
-      // Logged in
+      // 2. Nếu đã đăng nhập mà cố vào lại trang Auth -> Tự động chuyển về Dashboard đúng với Role
       if (isAuthPath) {
         if (role == 'HOST') return '/host/dashboard';
         if (role == 'ADMIN') return '/admin/dashboard';
@@ -101,11 +106,13 @@ final appRouterProvider = Provider<GoRouter>((ref) {
 
       final path = state.matchedLocation;
 
+      // 3. Nếu vào trang chủ / hoặc /home -> Tự động phân luồng theo Role
       if (path == '/' || path == '/home') {
         if (role == 'HOST') return '/host/dashboard';
         if (role == 'ADMIN') return '/admin/dashboard';
       }
 
+      // 4. Bảo vệ đường dẫn cấm truy cập theo Role (Customer không được vào /host hoặc /admin)
       if (role == 'CUSTOMER') {
         if (path.startsWith('/host') || path.startsWith('/admin')) {
           return '/home';
@@ -118,6 +125,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
 
       return null;
     },
+
     routes: [
       GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
       GoRoute(

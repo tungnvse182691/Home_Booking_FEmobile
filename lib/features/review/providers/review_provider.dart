@@ -1,13 +1,15 @@
-﻿import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/network/dio_client.dart';
 import '../../../core/utils/response_utils.dart';
 import '../models/review_model.dart';
 
+/// Lớp đại diện cho Trạng thái (State) của Quản lý Đánh giá Review
+
 class ReviewState {
-  final List<ReviewModel> reviews;
-  final bool isLoading;
-  final bool isSubmitting;
-  final String? error;
+  final List<ReviewModel> reviews; // Danh sách các bài đánh giá
+  final bool isLoading;            // Cờ đang tải dữ liệu danh sách
+  final bool isSubmitting;         // Cờ đang gửi yêu cầu tạo/sửa/xóa đánh giá
+  final String? error;             // Thông tin lỗi (nếu có)
 
   ReviewState({
     this.reviews = const [],
@@ -16,6 +18,7 @@ class ReviewState {
     this.error,
   });
 
+  /// Hàm hỗ trợ sao chép state với các giá trị mới
   ReviewState copyWith({
     List<ReviewModel>? reviews,
     bool? isLoading,
@@ -31,15 +34,18 @@ class ReviewState {
   }
 }
 
+/// Lớp Notifier chịu trách nhiệm quản lý state và tương tác với API Đánh giá
 class ReviewNotifier extends StateNotifier<ReviewState> {
   final Ref ref;
 
   ReviewNotifier(this.ref) : super(ReviewState());
 
+  /// Lấy danh sách đánh giá của một phòng homestay theo roomId
   Future<void> fetchRoomReviews(String roomId) async {
     state = state.copyWith(isLoading: true);
     try {
       final dio = ref.read(dioProvider);
+      // Gọi API GET /api/rooms/{roomId}/reviews
       final response = await dio.get('/api/rooms/$roomId/reviews');
       if (response.data['success'] == true) {
         final items = extractItems(response.data['data']);
@@ -53,10 +59,12 @@ class ReviewNotifier extends StateNotifier<ReviewState> {
     }
   }
 
+  /// Lấy danh sách đánh giá cá nhân do chính người dùng hiện tại đã tạo
   Future<void> fetchMyReviews() async {
     state = state.copyWith(isLoading: true);
     try {
       final dio = ref.read(dioProvider);
+      // Gọi API GET /api/reviews/my-reviews
       final response = await dio.get('/api/reviews/my-reviews');
       if (response.data['success'] == true) {
         final items = extractItems(response.data['data']);
@@ -70,6 +78,7 @@ class ReviewNotifier extends StateNotifier<ReviewState> {
     }
   }
 
+  /// Gửi tạo bài đánh giá mới cho đơn đặt phòng
   Future<bool> submitReview({
     required String bookingId,
     required String roomId,
@@ -86,6 +95,7 @@ class ReviewNotifier extends StateNotifier<ReviewState> {
     try {
       final dio = ref.read(dioProvider);
 
+      // Quy đổi điểm đánh giá từ double sang int (giới hạn từ 1 đến 5 sao)
       final int ratingInt = rating.round().clamp(1, 5);
       final int cleanlinessInt = cleanliness.round().clamp(1, 5);
       final int locationInt = location.round().clamp(1, 5);
@@ -103,6 +113,7 @@ class ReviewNotifier extends StateNotifier<ReviewState> {
         if (comment != null && comment.trim().isNotEmpty) 'comment': comment.trim(),
       };
 
+      // Gọi API POST /api/reviews để gửi đánh giá
       final response = await dio.post('/api/reviews', data: body);
 
       final data = response.data;
@@ -119,6 +130,7 @@ class ReviewNotifier extends StateNotifier<ReviewState> {
     }
   }
 
+  /// Cập nhật bài đánh giá đã có theo reviewId
   Future<bool> updateReview({
     required String reviewId,
     required double rating,
@@ -143,11 +155,12 @@ class ReviewNotifier extends StateNotifier<ReviewState> {
         if (comment != null && comment.trim().isNotEmpty) 'comment': comment.trim(),
       };
 
+      // Gọi API PUT /api/reviews/{reviewId}
       final response = await dio.put('/api/reviews/$reviewId', data: body);
       final isSuccess = response.data is Map && response.data['success'] == true;
 
       if (isSuccess) {
-        // Cap nhat lai local state
+        // Cập nhật lại local state danh sách reviews
         final updated = state.reviews.map((r) {
           if (r.reviewId == reviewId) {
             return ReviewModel.fromJson({
@@ -168,10 +181,12 @@ class ReviewNotifier extends StateNotifier<ReviewState> {
     }
   }
 
+  /// Xóa bài đánh giá theo reviewId
   Future<bool> deleteReview(String reviewId) async {
     state = state.copyWith(isSubmitting: true);
     try {
       final dio = ref.read(dioProvider);
+      // Gọi API DELETE /api/reviews/{reviewId}
       final response = await dio.delete('/api/reviews/$reviewId');
       final isSuccess = response.data is Map && response.data['success'] == true;
 
@@ -189,7 +204,9 @@ class ReviewNotifier extends StateNotifier<ReviewState> {
   }
 }
 
+/// Provider toàn cục quản lý State của Review
 final reviewProvider =
     StateNotifierProvider<ReviewNotifier, ReviewState>((ref) {
   return ReviewNotifier(ref);
 });
+

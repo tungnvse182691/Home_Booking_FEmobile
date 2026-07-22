@@ -4,8 +4,9 @@ import '../providers/review_provider.dart';
 import '../models/review_model.dart';
 import '../../../utils/app_theme.dart';
 
+/// Màn hình Chỉnh sửa bài Đánh giá đã gửi của Khách hàng
 class EditReviewScreen extends ConsumerStatefulWidget {
-  final ReviewModel review;
+  final ReviewModel review; // Bài đánh giá ban đầu cần chỉnh sửa
 
   const EditReviewScreen({super.key, required this.review});
 
@@ -14,14 +15,15 @@ class EditReviewScreen extends ConsumerStatefulWidget {
 }
 
 class _EditReviewScreenState extends ConsumerState<EditReviewScreen> {
-  late double _rating;
-  late double _cleanliness;
-  late double _location;
-  late double _service;
-  late double _value;
-  late List<String> _selectedTags;
-  late TextEditingController _commentController;
+  late double _rating;                       // Số sao tổng thể (1 - 5)
+  late double _cleanliness;                  // Số sao Độ sạch sẽ
+  late double _location;                     // Số sao Vị trí
+  late double _service;                      // Số sao Dịch vụ & Phục vụ
+  late double _value;                        // Số sao Giá trị tương xứng
+  late List<String> _selectedTags;           // Các thẻ Tag đánh giá nhanh đã chọn
+  late TextEditingController _commentController; // Bộ điều khiển nội dung nhận xét bằng văn bản
 
+  // Danh sách gợi ý thẻ đánh giá nhanh
   final List<String> _availableTags = [
     'Sạch sẽ', 'View đẹp', 'Chủ nhà thân thiện',
     'Vị trí tốt', 'Yên tĩnh', 'Đáng tiền',
@@ -31,6 +33,7 @@ class _EditReviewScreenState extends ConsumerState<EditReviewScreen> {
   @override
   void initState() {
     super.initState();
+    // Nạp dữ liệu đánh giá cũ vào các biến trạng thái
     _rating = widget.review.rating;
     _cleanliness = widget.review.cleanliness ?? 5;
     _location = widget.review.location ?? 5;
@@ -45,6 +48,7 @@ class _EditReviewScreenState extends ConsumerState<EditReviewScreen> {
     _commentController.dispose();
     super.dispose();
   }
+
 
   Widget _buildStarRow(String label, double value, ValueChanged<double> onChanged) {
     return Padding(

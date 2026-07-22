@@ -9,6 +9,7 @@ import '../providers/review_provider.dart';
 import '../screens/edit_review_screen.dart';
 import '../../../utils/app_theme.dart';
 
+/// Màn hình Quản lý Danh sách các Bài Đánh giá của chính Khách hàng đã viết
 class MyReviewsScreen extends ConsumerStatefulWidget {
   const MyReviewsScreen({super.key});
 
@@ -20,9 +21,11 @@ class _MyReviewsScreenState extends ConsumerState<MyReviewsScreen> {
   @override
   void initState() {
     super.initState();
+    // Tải danh sách đánh giá cá nhân từ API khi khởi tạo màn hình
     Future.microtask(() => ref.read(reviewProvider.notifier).fetchMyReviews());
   }
 
+  /// Hiển thị hộp thoại Dialog xác nhận xóa đánh giá theo reviewId
   Future<void> _confirmDelete(BuildContext context, ReviewModel review) async {
     final confirmed = await showDialog<bool>(
       context: context,
@@ -44,6 +47,7 @@ class _MyReviewsScreenState extends ConsumerState<MyReviewsScreen> {
 
     if (confirmed != true || !context.mounted) return;
 
+    // Phát lệnh xóa đánh giá thông qua reviewProvider
     final success = await ref.read(reviewProvider.notifier).deleteReview(review.reviewId);
     if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
@@ -51,6 +55,7 @@ class _MyReviewsScreenState extends ConsumerState<MyReviewsScreen> {
     );
   }
 
+  /// Mở màn hình Chỉnh sửa bài đánh giá (EditReviewScreen)
   Future<void> _openEdit(BuildContext context, ReviewModel review) async {
     final result = await Navigator.push<bool>(
       context,
@@ -58,6 +63,7 @@ class _MyReviewsScreenState extends ConsumerState<MyReviewsScreen> {
     );
     if (result == true && context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
+
         const SnackBar(content: Text('Đánh giá đã được cập nhật')),
       );
     }

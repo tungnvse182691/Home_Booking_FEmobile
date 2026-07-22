@@ -10,6 +10,12 @@ import '../providers/admin_provider.dart';
 import '../../rooms/models/room_model.dart';
 import '../../../utils/app_theme.dart';
 
+/// ============================================================================
+/// MÀN HÌNH QUẢN LÝ PHÒNG HOMESTAY (DÀNH CHO ADMIN)
+/// Giúp Admin theo dõi tất cả các Homestay trên hệ thống, xem chi tiết và thực hiện
+/// quyền xóa/gỡ các bài đăng Homestay vi phạm tiêu chuẩn lưu trú.
+/// ============================================================================
+
 class AdminRoomsScreen extends ConsumerStatefulWidget {
   const AdminRoomsScreen({super.key});
 
@@ -18,8 +24,9 @@ class AdminRoomsScreen extends ConsumerStatefulWidget {
 }
 
 class _AdminRoomsScreenState extends ConsumerState<AdminRoomsScreen> {
+  // Controller quản lý từ khóa tìm kiếm tên phòng / địa điểm
   final _searchController = TextEditingController();
-  Timer? _searchDebounce;
+  Timer? _searchDebounce; // Timer hoãn nạp dữ liệu khi nhập từ khóa (Debounce 350ms)
 
   @override
   void dispose() {
@@ -28,6 +35,7 @@ class _AdminRoomsScreenState extends ConsumerState<AdminRoomsScreen> {
     super.dispose();
   }
 
+  /// Sự kiện gõ từ khóa tìm kiếm phòng
   void _onSearchChanged(String v) {
     setState(() {});
     _searchDebounce?.cancel();
@@ -36,6 +44,7 @@ class _AdminRoomsScreenState extends ConsumerState<AdminRoomsScreen> {
     });
   }
 
+  /// Áp dụng từ khóa tìm kiếm để gọi API lấy danh sách phòng mới
   void _applyFilter() {
     ref.read(adminRoomsProvider.notifier).fetchRooms(
       searchTerm: _searchController.text.trim().isEmpty
@@ -46,6 +55,7 @@ class _AdminRoomsScreenState extends ConsumerState<AdminRoomsScreen> {
 
   @override
   Widget build(BuildContext context) {
+
     final roomsAsync = ref.watch(adminRoomsProvider);
     final currencyFormat = NumberFormat.currency(
       locale: 'vi_VN',

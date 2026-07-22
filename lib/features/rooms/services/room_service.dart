@@ -3,11 +3,13 @@ import '../../../core/constants/api_constants.dart';
 import '../models/room_model.dart';
 import '../../review/models/review_model.dart';
 
+/// Service phụ trách các yêu cầu API tìm kiếm, lọc và xem chi tiết phòng Homestay
 class RoomService {
   final Dio _dio;
 
   RoomService(this._dio);
 
+  /// Trích xuất mảng danh sách từ JSON phản hồi của Backend
   List<dynamic> _extractItems(dynamic value) {
     if (value is List) return value;
     if (value is Map) {
@@ -19,6 +21,7 @@ class RoomService {
     return const [];
   }
 
+  /// Lấy danh sách phòng Homestay phân trang kèm các tham số tìm kiếm & lọc
   Future<RoomListResponse> getRooms({
     String? searchTerm,
     String? city,
@@ -30,6 +33,7 @@ class RoomService {
     int pageSize = 10,
   }) async {
     try {
+      // Gọi API GET /api/rooms kèm queryParameters
       final response = await _dio.get(
         ApiConstants.rooms,
         queryParameters: {
@@ -43,6 +47,7 @@ class RoomService {
           'limit': pageSize,
         },
       );
+
 
       if (response.data['success'] == true) {
         final data = response.data['data'];

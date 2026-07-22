@@ -8,12 +8,16 @@ import '../models/host_model.dart';
 import '../../../utils/app_theme.dart';
 import '../../../widgets/animated_pressable_card.dart';
 
+/// Màn hình Bảng điều khiển (Dashboard) chính dành cho Chủ nhà (Host)
 class HostDashboardScreen extends ConsumerWidget {
   const HostDashboardScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Theo dõi chỉ số dữ liệu Dashboard từ Riverpod hostDashboardProvider
     final dashboardAsync = ref.watch(hostDashboardProvider);
+    
+    // Định dạng tiền tệ Việt Nam (VNĐ - 0 chữ số thập phân)
     final currencyFormat = NumberFormat.currency(
       locale: 'vi_VN',
       symbol: 'đ',
@@ -48,6 +52,7 @@ class HostDashboardScreen extends ConsumerWidget {
       ),
       body: RefreshIndicator(
         color: AppTheme.primary,
+        // Kéo để vuốt làm mới dữ liệu thống kê Dashboard
         onRefresh: () => ref.refresh(hostDashboardProvider.future),
         child: dashboardAsync.when(
           loading: () => const Center(
@@ -58,6 +63,7 @@ class HostDashboardScreen extends ConsumerWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 const Icon(Icons.error_outline_rounded, size: 56, color: Color(0xFFE57373)),
+
                 const SizedBox(height: 12),
                 Text(
                   'Không thể tải dữ liệu',

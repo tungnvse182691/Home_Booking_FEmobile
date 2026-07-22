@@ -1,4 +1,4 @@
-﻿import 'dart:io';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
@@ -10,12 +10,13 @@ import '../widgets/quick_tags_selector.dart';
 import '../providers/review_provider.dart';
 import '../../../utils/app_theme.dart';
 
+/// Màn hình Tạo Đánh giá Mới cho Đơn đặt phòng đã hoàn thành
 class ReviewScreen extends ConsumerStatefulWidget {
-  final String bookingId;
-  final String roomId;
-  final String roomName;
-  final String? thumbnailUrl;
-  final DateTime? checkOutDate;
+  final String bookingId;       // ID đơn đặt phòng hoàn thành
+  final String roomId;          // ID phòng Homestay được đánh giá
+  final String roomName;        // Tên phòng Homestay
+  final String? thumbnailUrl;   // Ảnh đại diện phòng
+  final DateTime? checkOutDate; // Ngày Check-out
 
   const ReviewScreen({
     super.key,
@@ -31,15 +32,16 @@ class ReviewScreen extends ConsumerStatefulWidget {
 }
 
 class _ReviewScreenState extends ConsumerState<ReviewScreen> {
-  double _rating = 0;
-  double _cleanliness = 5;
-  double _location = 5;
-  double _service = 5;
-  double _value = 5;
-  final List<String> _selectedTags = [];
-  final _commentController = TextEditingController();
-  List<XFile> _images = [];
+  double _rating = 0;                       // Số sao tổng thể khởi tạo (0 - 5 sao)
+  double _cleanliness = 5;                  // Đánh giá Độ sạch sẽ
+  double _location = 5;                     // Đánh giá Vị trí
+  double _service = 5;                      // Đánh giá Dịch vụ
+  double _value = 5;                        // Đánh giá Giá trị tương xứng
+  final List<String> _selectedTags = [];    // Danh sách tag đánh giá nhanh đã chọn
+  final _commentController = TextEditingController(); // Bộ điều khiển nhập nhận xét text
+  List<XFile> _images = [];                 // Danh sách ảnh chụp/đính kèm đánh giá
 
+  // Các gợi ý tag đánh giá nhanh
   final List<String> _availableTags = [
     "Sạch sẽ",
     "View đẹp",
@@ -51,6 +53,7 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
     "Dễ tìm",
   ];
 
+  /// Getter trả về nhãn văn bản của điểm số sao tổng thể
   String get _ratingLabel {
     if (_rating == 0) return "";
     if (_rating <= 1) return "Rất tệ";
@@ -59,6 +62,7 @@ class _ReviewScreenState extends ConsumerState<ReviewScreen> {
     if (_rating <= 4) return "Tốt";
     return "Xuất sắc";
   }
+
 
   String get _completionText {
     if (widget.checkOutDate != null) {

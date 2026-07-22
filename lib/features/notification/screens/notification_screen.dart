@@ -6,11 +6,18 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../utils/app_theme.dart';
 import '../providers/notification_provider.dart';
 
+/// ============================================================================
+/// MÀN HÌNH DANH SÁCH THÔNG BÁO PUSH NOTIFICATION (FE)
+/// Cho phép người dùng xem tất cả thông báo hệ thống, trạng thái đã đọc/chưa đọc,
+/// vuốt để làm mới và nhấn vào để đánh dấu thông báo là đã đọc.
+/// ============================================================================
+
 class NotificationScreen extends ConsumerWidget {
   const NotificationScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Theo dõi danh sách thông báo bất đồng bộ từ notificationProvider
     final notificationsAsync = ref.watch(notificationProvider);
 
     return Scaffold(
@@ -32,6 +39,7 @@ class NotificationScreen extends ConsumerWidget {
         ),
       ),
       body: RefreshIndicator(
+        // Kéo vuốt màn hình xuống để tự động nạp lại danh sách thông báo mới nhất
         onRefresh: () =>
             ref.read(notificationProvider.notifier).fetchNotifications(),
         child: notificationsAsync.when(
@@ -43,6 +51,7 @@ class NotificationScreen extends ConsumerWidget {
             ),
           ),
           data: (notifications) {
+
             if (notifications.isEmpty) {
               return SingleChildScrollView(
                 physics: const AlwaysScrollableScrollPhysics(),

@@ -1,8 +1,9 @@
-﻿class HostDashboardData {
-  final int totalRooms;
-  final int totalBookings;
-  final double totalRevenue;
-  final List<RecentBooking> recentBookings;
+/// Model chứa các chỉ số thống kê tổng quan trên Dashboard của Host (Chủ nhà)
+class HostDashboardData {
+  final int totalRooms;                     // Tổng số phòng homestay của Host
+  final int totalBookings;                  // Tổng số lượt đặt phòng
+  final double totalRevenue;                // Tổng doanh thu đạt được (VNĐ)
+  final List<RecentBooking> recentBookings; // Danh sách các đơn đặt phòng mới nhất
 
   HostDashboardData({
     required this.totalRooms,
@@ -11,6 +12,7 @@
     required this.recentBookings,
   });
 
+  /// Parse JSON từ API GET /api/host/dashboard
   factory HostDashboardData.fromJson(Map<String, dynamic> json) => HostDashboardData(
     totalRooms: (json['totalRooms'] as num?)?.toInt() ?? 0,
     totalBookings: (json['totalBookings'] as num?)?.toInt() ?? 0,
@@ -21,13 +23,14 @@
   );
 }
 
+/// Model hiển thị thông tin đơn đặt phòng gần đây trên Dashboard Host
 class RecentBooking {
-  final String bookingId;
-  final String bookingCode;
-  final String customerName;
-  final String roomName;
-  final double totalAmount;
-  final String status;
+  final String bookingId;    // Mã ID đơn đặt phòng
+  final String bookingCode;  // Mã code rút gọn đơn đặt
+  final String customerName; // Tên khách hàng đặt phòng
+  final String roomName;     // Tên phòng được đặt
+  final double totalAmount;  // Tổng tiền đơn đặt phòng
+  final String status;       // Trạng thái đơn (PENDING, CONFIRMED, COMPLETED, CANCELLED)
 
   RecentBooking({
     required this.bookingId,
@@ -48,19 +51,20 @@ class RecentBooking {
   );
 }
 
+/// Model thông tin rút gọn về phòng Homestay thuộc quản lý của Host
 class HostRoomItem {
-  final String id;
-  final String name;
-  final double price;
-  final String status;
-  final String? thumbnailUrl;
-  final double ratingAvg;
-  final int reviewCount;
-  final String city;
-  final int bedrooms;
-  final int bathrooms;
-  final int maxGuests;
-  final DateTime? createdAt;
+  final String id;            // ID phòng
+  final String name;          // Tên phòng Homestay
+  final double price;         // Giá thuê / 1 đêm (VNĐ)
+  final String status;        // Trạng thái (AVAILABLE, BOOKED, MAINTENANCE, HIDDEN)
+  final String? thumbnailUrl; // Ảnh đại diện của phòng
+  final double ratingAvg;     // Điểm đánh giá trung bình (ví dụ: 4.8)
+  final int reviewCount;      // Tổng số lượt đánh giá
+  final String city;          // Thành phố/Tỉnh
+  final int bedrooms;         // Số phòng ngủ
+  final int bathrooms;        // Số phòng tắm
+  final int maxGuests;        // Sức chứa tối đa (số khách)
+  final DateTime? createdAt;  // Ngày khởi tạo bài đăng phòng
 
   HostRoomItem({
     required this.id,
@@ -78,9 +82,10 @@ class HostRoomItem {
   });
 }
 
+/// Model điểm dữ liệu báo cáo doanh thu theo tháng/kỳ
 class RevenueReportItem {
-  final String month;
-  final double amount;
+  final String month;   // Tháng/kỳ báo cáo (ví dụ: "Tháng 06/2025")
+  final double amount;  // Doanh thu trong tháng/kỳ (VNĐ)
 
   RevenueReportItem({required this.month, required this.amount});
 
@@ -94,3 +99,4 @@ class RevenueReportItem {
         0.0,
   );
 }
+

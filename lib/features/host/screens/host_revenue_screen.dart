@@ -6,11 +6,13 @@ import '../providers/host_provider.dart';
 import '../models/host_model.dart';
 import '../../../utils/app_theme.dart';
 
+/// Màn hình Xem báo cáo thống kê doanh thu của Host (Chủ nhà)
 class HostRevenueScreen extends ConsumerWidget {
   const HostRevenueScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Đọc trạng thái doanh thu từ Riverpod hostRevenueProvider
     final revenueAsync = ref.watch(hostRevenueProvider);
     final currencyFormat = NumberFormat.currency(
       locale: 'vi_VN',
@@ -58,6 +60,7 @@ class HostRevenueScreen extends ConsumerWidget {
         error: (err, stack) => Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
+
             children: [
               const Icon(Icons.error_outline_rounded, size: 56, color: Color(0xFFE57373)),
               const SizedBox(height: 12),

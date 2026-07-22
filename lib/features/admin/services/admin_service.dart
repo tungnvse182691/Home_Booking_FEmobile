@@ -1,13 +1,17 @@
 import 'package:dio/dio.dart';
 import '../../../core/constants/api_constants.dart';
 import '../models/admin_model.dart';
-import '../../host/models/host_model.dart'; // Reuse RevenueReportItem
+import '../../host/models/host_model.dart'; // Sử dụng lại RevenueReportItem từ host model
+
+/// Lớp Service xử lý toàn bộ yêu cầu API Quản trị dành cho Admin
 
 class AdminService {
   final Dio _dio;
 
+  /// Khởi tạo AdminService với phiên DioClient
   AdminService(this._dio);
 
+  /// Trích xuất danh sách phần tử (items) từ kết quả PagedResult của Backend trả về
   /// BE trả về PagedResult<T> = { total, page, pageSize, items: [...] }
   /// hoặc đôi khi wrap thêm { success, data: { total, page, pageSize, items } }
   List<dynamic> _extractItems(dynamic value) {
@@ -34,16 +38,17 @@ class AdminService {
     return const [];
   }
 
-  // ── Dashboard ─────────────────────────────────────────────────────────────
+  // ── Dashboard Quản trị ──────────────────────────────────────────────────
+  /// Lấy thông tin thống kê tổng quan hệ thống (Tổng doanh thu, số người dùng, số đặt phòng, phòng homestay)
   Future<AdminDashboardData> getDashboard() async {
     final response = await _dio.get(ApiConstants.adminDashboard);
     final data = response.data['data'];
     return AdminDashboardData.fromJson(Map<String, dynamic>.from(data as Map));
   }
 
-  // ── Users ─────────────────────────────────────────────────────────────────
-  /// BE: GET /api/admin/users?page&pageSize&search&role&status
-  /// Returns PagedResult<AdminUserDto>
+  // ── Quản lý Người dùng (Users) ─────────────────────────────────────────
+  /// Lấy danh sách người dùng phân trang kèm bộ lọc (tìm kiếm, role, trạng thái)
+  /// GET /api/admin/users?page&pageSize&search&role&status
   Future<List<AdminUserItem>> getUsers({
     int page = 1,
     int pageSize = 100,
@@ -67,6 +72,7 @@ class AdminService {
         .toList();
   }
 
+  /// Cập nhật trạng thái người dùng (Khóa / Kích hoạt tài khoản)
   Future<void> updateUserStatus(String id, String status) async {
     await _dio.patch(
       '${ApiConstants.adminUsers}/$id/status',
@@ -74,6 +80,7 @@ class AdminService {
     );
   }
 
+  /// Phân lại vai trò cho người dùng (CUSTOMER, HOST, ADMIN)
   Future<void> updateUserRole(String id, String role) async {
     await _dio.patch(
       '${ApiConstants.adminUsers}/$id/role',
@@ -81,9 +88,9 @@ class AdminService {
     );
   }
 
-  // ── Payments ──────────────────────────────────────────────────────────────
-  /// BE: GET /api/admin/payments?page&pageSize&status&method&userId
-  /// Returns PagedResult<PaymentResponseDto>
+  // ── Quản lý Thanh toán (Payments) ──────────────────────────────────────
+  /// Lấy danh sách giao dịch thanh toán trên hệ thống
+  /// GET /api/admin/payments?page&pageSize&status&method&userId
   Future<List<AdminPaymentItem>> getPayments({
     int page = 1,
     int pageSize = 100,
@@ -107,12 +114,14 @@ class AdminService {
         .toList();
   }
 
-  // ── Rooms ─────────────────────────────────────────────────────────────────
+  // ── Quản lý Phòng Homestay (Rooms) ─────────────────────────────────────
+  /// Cập nhật thông tin hoặc phê duyệt phòng Homestay dưới quyền Admin
   Future<void> updateRoom(String id, Map<String, dynamic> roomData) async {
     await _dio.put('${ApiConstants.adminRooms}/$id', data: roomData);
   }
 
-  // ── Revenue ───────────────────────────────────────────────────────────────
+  // ── Báo cáo Doanh thu Hệ thống (Revenue) ──────────────────────────────
+  /// Lấy dữ liệu báo cáo doanh thu toàn hệ thống cho Admin
   Future<List<RevenueReportItem>> getRevenueReport() async {
     final response = await _dio.get(ApiConstants.adminRevenue);
     final items = _extractItems(response.data['data']);
@@ -124,3 +133,4 @@ class AdminService {
         .toList();
   }
 }
+

@@ -8,6 +8,12 @@ import '../providers/admin_provider.dart';
 import '../models/admin_model.dart';
 import '../../../utils/app_theme.dart';
 
+/// ============================================================================
+/// MÀN HÌNH QUẢN LÝ NGƯỜI DÙNG (DÀNH CHO ADMIN)
+/// Cung cấp tính năng: Tìm kiếm (Search Debounce), Lọc theo Role & Trạng thái,
+/// Phân vai trò (Customer/Host/Admin) và Khóa/Kích hoạt tài khoản người dùng.
+/// ============================================================================
+
 class AdminUsersScreen extends ConsumerStatefulWidget {
   const AdminUsersScreen({super.key});
 
@@ -16,25 +22,28 @@ class AdminUsersScreen extends ConsumerStatefulWidget {
 }
 
 class _AdminUsersScreenState extends ConsumerState<AdminUsersScreen> {
+  // Controller quản lý ô nhập từ khóa tìm kiếm
   final _searchController = TextEditingController();
-  String _selectedRole = '';
-  String _selectedStatus = '';
-  Timer? _searchDebounce;
+  String _selectedRole = '';   // Role được chọn lọc: '' (Tất cả), CUSTOMER, HOST, ADMIN
+  String _selectedStatus = ''; // Trạng thái được chọn lọc: '' (Tất cả), ACTIVE, INACTIVE
+  Timer? _searchDebounce;      // Timer hoãn nạp dữ liệu khi đang gõ chữ (Debounce 350ms)
 
   @override
   void initState() {
     super.initState();
-    // Load initial data
+    // Tự động gọi hàm nạp danh sách ngay sau khi Widget dựng xong khung
     WidgetsBinding.instance.addPostFrameCallback((_) => _applyFilter());
   }
 
   @override
   void dispose() {
+    // Hủy Timer debounce và giải phóng bộ nhớ của Controller khi thoát màn hình
     _searchDebounce?.cancel();
     _searchController.dispose();
     super.dispose();
   }
 
+  /// Áp dụng bộ lọc và kích hoạt Provider nạp lại dữ liệu từ Backend
   Future<void> _applyFilter() async {
     ref.read(adminUsersProvider.notifier).fetchUsers(
       search: _searchController.text.trim().isEmpty
@@ -45,11 +54,12 @@ class _AdminUsersScreenState extends ConsumerState<AdminUsersScreen> {
     );
   }
 
+  /// Xử lý sự kiện gõ phím ô Tìm kiếm với Debounce (chờ 350ms ngừng gõ mới tìm)
   void _onSearchChanged(String v) {
     setState(() {});
-    _searchDebounce?.cancel();
+    _searchDebounce?.cancel(); // Hủy Timer cũ nếu người dùng tiếp tục gõ
     _searchDebounce = Timer(const Duration(milliseconds: 350), () {
-      _applyFilter();
+      _applyFilter(); // Tìm kiếm tự động sau 350ms
     });
   }
 
@@ -57,6 +67,7 @@ class _AdminUsersScreenState extends ConsumerState<AdminUsersScreen> {
   Widget build(BuildContext context) {
     final usersAsync = ref.watch(adminUsersProvider);
     final theme = Theme.of(context);
+
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F6FA),

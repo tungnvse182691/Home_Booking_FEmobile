@@ -8,12 +8,19 @@ import '../../auth/providers/auth_provider.dart';
 import '../../../utils/app_theme.dart';
 import '../../../widgets/animated_pressable_card.dart';
 
+/// ============================================================================
+/// MÀN HÌNH BẢNG ĐIỀU KHIỂN QUẢN TRỊ (ADMIN DASHBOARD SCREEN)
+/// Hiển thị thống kê chỉ số hệ thống, lối tắt điều hướng (Drawer) và các đơn đặt phòng mới nhất
+/// ============================================================================
+
 class AdminDashboardScreen extends ConsumerWidget {
   const AdminDashboardScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Lấy dữ liệu thống kê bất đồng bộ từ adminDashboardProvider
     final statsAsync = ref.watch(adminDashboardProvider);
+    // Khởi tạo công cụ định dạng tiền tệ (VD: 100.000.000 ₫)
     final currencyFormat = NumberFormat.currency(
       locale: 'vi_VN',
       symbol: '₫',
@@ -58,6 +65,7 @@ class AdminDashboardScreen extends ConsumerWidget {
             ),
           ],
         ),
+
         actions: [
           IconButton(
             icon: Container(

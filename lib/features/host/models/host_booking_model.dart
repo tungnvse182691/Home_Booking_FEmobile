@@ -1,20 +1,21 @@
-﻿class HostBookingItem {
-  final String bookingId;
-  final String bookingCode;
-  final String roomId;
-  final String roomName;
-  final String? thumbnailUrl;
-  final String customerName;
-  final String? customerPhone;
-  final String? customerAvatar;
-  final DateTime checkInDate;
-  final DateTime checkOutDate;
-  final int numberOfNights;
-  final double totalAmount;
-  final String status;
-  final String? specialRequest;
-  final String? cancelReason;
-  final DateTime createdAt;
+/// Model đại diện cho thông tin một đơn đặt phòng của Host (Chủ nhà)
+class HostBookingItem {
+  final String bookingId;       // Mã ID duy nhất của đơn đặt phòng
+  final String bookingCode;     // Mã code rút gọn của đơn (ví dụ: BK12345)
+  final String roomId;          // ID phòng Homestay được đặt
+  final String roomName;        // Tên phòng Homestay
+  final String? thumbnailUrl;   // Đường dẫn ảnh đại diện phòng
+  final String customerName;    // Tên của khách hàng đặt phòng
+  final String? customerPhone;  // Số điện thoại liên hệ khách hàng
+  final String? customerAvatar; // Ảnh đại diện của khách hàng
+  final DateTime checkInDate;   // Ngày nhận phòng (Check-in)
+  final DateTime checkOutDate;  // Ngày trả phòng (Check-out)
+  final int numberOfNights;     // Tổng số đêm lưu trú
+  final double totalAmount;     // Tổng số tiền thanh toán của đơn
+  final String status;          // Trạng thái đơn (PENDING, CONFIRMED, COMPLETED, CANCELLED)
+  final String? specialRequest; // Yêu cầu đặc biệt từ khách hàng (nếu có)
+  final String? cancelReason;   // Lý do hủy đơn (nếu bị hủy)
+  final DateTime createdAt;     // Thời điểm tạo đơn đặt phòng
 
   HostBookingItem({
     required this.bookingId,
@@ -35,11 +36,13 @@
     required this.createdAt,
   });
 
+  /// Factory constructor khởi tạo đối tượng từ JSON của Backend trả về
   factory HostBookingItem.fromJson(Map<String, dynamic> json) {
+    // Hàm trợ giúp ép kiểu chuỗi ngày từ Backend thành DateTime
     DateTime parseDate(dynamic v) {
       if (v == null) return DateTime.now();
       if (v is String) {
-        // DateOnly from BE: "2025-06-01" — treat as local midnight
+        // Định dạng ngày yyyy-MM-dd từ BE
         if (v.length == 10) return DateTime.parse('${v}T00:00:00');
         return DateTime.tryParse(v) ?? DateTime.now();
       }
@@ -66,3 +69,4 @@
     );
   }
 }
+

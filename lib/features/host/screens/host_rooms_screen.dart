@@ -9,6 +9,7 @@ import '../providers/host_provider.dart';
 import '../models/host_model.dart';
 import '../../../utils/app_theme.dart';
 
+/// Màn hình Quản lý danh sách Phòng Homestay của Host (Chủ nhà)
 class HostRoomsScreen extends ConsumerStatefulWidget {
   const HostRoomsScreen({super.key});
 
@@ -17,7 +18,7 @@ class HostRoomsScreen extends ConsumerStatefulWidget {
 }
 
 class _HostRoomsScreenState extends ConsumerState<HostRoomsScreen> {
-  final _searchController = TextEditingController();
+  final _searchController = TextEditingController(); // Bộ điều khiển ô tìm kiếm phòng
 
   @override
   void dispose() {
@@ -25,9 +26,11 @@ class _HostRoomsScreenState extends ConsumerState<HostRoomsScreen> {
     super.dispose();
   }
 
+  /// Dựng widget giao diện khi không tìm thấy phòng hoặc chưa đăng phòng nào
   Widget _buildEmptyState(bool isSearching) {
     return SingleChildScrollView(
       physics: const AlwaysScrollableScrollPhysics(),
+
       child: SizedBox(
         height: MediaQuery.of(context).size.height * 0.6,
         child: Center(

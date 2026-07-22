@@ -4,10 +4,10 @@ import '../services/room_service.dart';
 import 'room_list_provider.dart';
 import '../../review/models/review_model.dart';
 
-// RE-EXPOSE for compatibility
+// RE-EXPOSE cho các screen dùng lại roomFilterProvider
 export 'room_list_provider.dart' show roomFilterProvider;
 
-// --- Provider cho Chi tiết phòng ---
+// ─── Provider lấy Chi tiết một phòng Homestay (theo id) ──────────────────────
 final roomDetailProvider = FutureProvider.autoDispose.family<RoomDetail, String>((
   ref,
   id,
@@ -16,6 +16,7 @@ final roomDetailProvider = FutureProvider.autoDispose.family<RoomDetail, String>
   return await roomService.getRoomDetail(id);
 });
 
+// ─── Provider lấy danh sách bài Đánh giá của một phòng Homestay ───────────────
 final roomReviewsProvider = FutureProvider.autoDispose.family<List<ReviewModel>, String>((
   ref,
   roomId,
@@ -24,14 +25,14 @@ final roomReviewsProvider = FutureProvider.autoDispose.family<List<ReviewModel>,
   return await roomService.getRoomReviews(roomId);
 });
 
-// --- Restore RoomNotifier for other screens ---
+// ─── Lớp Trạng thái (State) quản lý Danh sách Phòng Homestay ────────────────
 class RoomState {
-  final List<RoomDetail> rooms;
-  final bool isLoading;
-  final bool isLoadMore;
-  final int page;
-  final bool hasMore;
-  final String? error;
+  final List<RoomDetail> rooms; // Danh sách các phòng
+  final bool isLoading;         // Đang tải dữ liệu trang đầu tiên
+  final bool isLoadMore;        // Đang tải thêm dữ liệu trang tiếp theo (Pagination)
+  final int page;               // Trang hiện tại
+  final bool hasMore;           // Còn dữ liệu để tải nữa hay không
+  final String? error;          // Lỗi xảy ra (nếu có)
 
   RoomState({
     this.rooms = const [],
@@ -41,6 +42,7 @@ class RoomState {
     this.hasMore = true,
     this.error,
   });
+
 
   RoomState copyWith({
     List<RoomDetail>? rooms,

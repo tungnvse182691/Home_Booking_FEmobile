@@ -7,6 +7,12 @@ import '../providers/admin_provider.dart';
 import '../models/admin_model.dart';
 import '../../../utils/app_theme.dart';
 
+/// ============================================================================
+/// MÀN HÌNH QUẢN LÝ GIAO DỊCH THANH TOÁN (DÀNH CHO ADMIN)
+/// Hiển thị danh sách lịch sử tất cả các giao dịch thanh toán trên ứng dụng,
+/// hỗ trợ lọc theo Trạng thái (Thành công/Đang xử lý/Thất bại) và Phương thức thanh toán.
+/// ============================================================================
+
 class AdminPaymentsScreen extends ConsumerStatefulWidget {
   const AdminPaymentsScreen({super.key});
 
@@ -16,15 +22,17 @@ class AdminPaymentsScreen extends ConsumerStatefulWidget {
 }
 
 class _AdminPaymentsScreenState extends ConsumerState<AdminPaymentsScreen> {
-  String _selectedStatus = '';
-  String _selectedMethod = '';
+  String _selectedStatus = ''; // Trạng thái chọn: '' (Tất cả), SUCCESS, PENDING, FAILED
+  String _selectedMethod = ''; // Phương thức chọn: '' (Tất cả), VNPAY, CASH, E_WALLET
 
   @override
   void initState() {
     super.initState();
+    // Nạp danh sách giao dịch sau khi khung hình dựng xong
     WidgetsBinding.instance.addPostFrameCallback((_) => _applyFilter());
   }
 
+  /// Áp dụng bộ lọc thanh toán và gọi Notifier tải dữ liệu mới từ Backend
   Future<void> _applyFilter() async {
     ref.read(adminPaymentsProvider.notifier).fetchPayments(
           status: _selectedStatus.isEmpty ? null : _selectedStatus,
@@ -34,12 +42,15 @@ class _AdminPaymentsScreenState extends ConsumerState<AdminPaymentsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Theo dõi danh sách giao dịch bất đồng bộ
     final paymentsAsync = ref.watch(adminPaymentsProvider);
+    // Công cụ định dạng số tiền VND
     final currencyFormat = NumberFormat.currency(
       locale: 'vi_VN',
       symbol: '₫',
       decimalDigits: 0,
     );
+
 
     return Scaffold(
       backgroundColor: AppTheme.background,

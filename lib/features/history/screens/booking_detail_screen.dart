@@ -7,13 +7,16 @@ import '../models/booking_history_model.dart';
 import '../widgets/status_badge.dart';
 import '../../../utils/app_theme.dart';
 
+/// Màn hình Chi tiết đơn đặt phòng Homestay
+
 class BookingDetailScreen extends StatelessWidget {
-  final BookingHistoryModel booking;
+  final BookingHistoryModel booking; // Đối tượng thông tin chi tiết của đơn đặt phòng
 
   const BookingDetailScreen({super.key, required this.booking});
 
   @override
   Widget build(BuildContext context) {
+    // Định dạng tiền tệ Việt Nam (đ) và ngày tháng (dd/MM/yyyy)
     final currencyFormat = NumberFormat.currency(locale: 'vi_VN', symbol: 'đ');
     final dateFormat = DateFormat('dd/MM/yyyy');
 
@@ -31,7 +34,7 @@ class BookingDetailScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Ảnh bìa
+            // 1. Khối hiển thị ảnh bìa phòng Homestay
             if (booking.thumbnailUrl != null &&
                 booking.thumbnailUrl!.isNotEmpty)
               CachedNetworkImage(
@@ -63,6 +66,7 @@ class BookingDetailScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // 2. Trạng thái đơn (Badge màu) & Mã đặt phòng
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -77,6 +81,8 @@ class BookingDetailScreen extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 16),
+                  
+                  // 3. Tên phòng & Địa chỉ vị trí
                   Text(
                     booking.roomName,
                     style: const TextStyle(
@@ -103,6 +109,7 @@ class BookingDetailScreen extends StatelessWidget {
 
                   const Divider(height: 48),
 
+                  // 4. Khối thông tin ngày nhận / trả phòng
                   const Text(
                     'THÔNG TIN LƯU TRÚ',
                     style: TextStyle(
@@ -126,6 +133,7 @@ class BookingDetailScreen extends StatelessWidget {
 
                   const Divider(height: 48),
 
+                  // 5. Khối thông tin thanh toán & Tổng tiền
                   const Text(
                     'THANH TOÁN',
                     style: TextStyle(
@@ -143,6 +151,7 @@ class BookingDetailScreen extends StatelessWidget {
                     isBold: true,
                   ),
 
+                  // 6. Khối thông tin liên hệ Chủ nhà (Host)
                   if (booking.host != null) ...[
                     const Divider(height: 48),
                     const Text(
@@ -202,6 +211,8 @@ class BookingDetailScreen extends StatelessWidget {
                     ),
                   ],
                   const SizedBox(height: 32),
+                  
+                  // 7. Nút Đổi ngày đặt phòng (Chỉ xuất hiện khi đơn ở trạng thái CONFIRMED hoặc PENDING)
                   if (booking.status == BookingStatus.CONFIRMED ||
                       booking.status == BookingStatus.PENDING)
                     SizedBox(
@@ -216,7 +227,7 @@ class BookingDetailScreen extends StatelessWidget {
                             'currentCheckOut': booking.checkOutDate,
                             'pricePerNight':
                                 booking.totalAmount / booking.nights,
-                            'blockedDates': [], // Sẽ lấy từ API trong thực tế
+                            'blockedDates': [],
                           },
                         ),
                         style: OutlinedButton.styleFrom(
@@ -245,6 +256,7 @@ class BookingDetailScreen extends StatelessWidget {
     );
   }
 
+  /// Helper dựng 1 dòng hiển thị thông tin nhãn (label) và giá trị (value)
   Widget _buildDetailRow(String label, String value, {bool isBold = false}) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -269,3 +281,4 @@ class BookingDetailScreen extends StatelessWidget {
     );
   }
 }
+

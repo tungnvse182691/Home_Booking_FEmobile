@@ -7,8 +7,9 @@ import '../widgets/rating_summary.dart';
 import '../providers/review_provider.dart';
 import '../../../utils/app_theme.dart';
 
+/// Màn hình Hiển thị toàn bộ Đánh giá của một phòng Homestay (dành cho Khách xem)
 class AllReviewsScreen extends ConsumerStatefulWidget {
-  final String roomId;
+  final String roomId; // ID của phòng Homestay cần xem đánh giá
 
   const AllReviewsScreen({super.key, required this.roomId});
 
@@ -17,12 +18,14 @@ class AllReviewsScreen extends ConsumerStatefulWidget {
 }
 
 class _AllReviewsScreenState extends ConsumerState<AllReviewsScreen> {
+  // Bộ lọc đánh giá mặc định
   String _selectedFilter = "Tất cả";
   final List<String> _filters = ["Tất cả", "5 ⭐", "4 ⭐", "3 ⭐", "Có ảnh"];
 
   @override
   void initState() {
     super.initState();
+    // Khởi tạo tải danh sách đánh giá của phòng từ API backend khi màn hình được tạo
     Future.microtask(() => ref.read(reviewProvider.notifier).fetchRoomReviews(widget.roomId));
   }
 
@@ -30,12 +33,13 @@ class _AllReviewsScreenState extends ConsumerState<AllReviewsScreen> {
   Widget build(BuildContext context) {
     final state = ref.watch(reviewProvider);
 
+    // Lọc danh sách bài đánh giá theo tiêu chí số sao được chọn (5 sao, 4 sao, 3 sao...)
     final filteredReviews = state.reviews.where((review) {
       if (_selectedFilter == "Tất cả") return true;
       if (_selectedFilter == "5 ⭐") return review.rating.round() == 5;
       if (_selectedFilter == "4 ⭐") return review.rating.round() == 4;
       if (_selectedFilter == "3 ⭐") return review.rating.round() == 3;
-      if (_selectedFilter == "Có ảnh") return false; // Reviews do not support photos in this DB schema.
+      if (_selectedFilter == "Có ảnh") return false;
       return true;
     }).toList();
 
@@ -58,6 +62,7 @@ class _AllReviewsScreenState extends ConsumerState<AllReviewsScreen> {
       body: RefreshIndicator(
         onRefresh: () => ref.read(reviewProvider.notifier).fetchRoomReviews(widget.roomId),
         child: Column(
+
           children: [
             // Filter
             Container(
